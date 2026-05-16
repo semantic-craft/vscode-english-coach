@@ -7,6 +7,23 @@ export interface RewriteResult {
   why: string;
 }
 
+const REWRITE_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    rewritten: {
+      type: "string",
+      description: "Only the rewritten English text, with no labels, quotes, or Markdown.",
+    },
+    why: {
+      type: "string",
+      description: 'A concise Simplified Chinese Markdown bullet list. Each point starts with "- ".',
+    },
+  },
+  required: ["rewritten", "why"],
+  additionalProperties: false,
+  propertyOrdering: ["rewritten", "why"],
+};
+
 export async function runRewrite(
   config: ProviderConfig,
   text: string,
@@ -14,7 +31,10 @@ export async function runRewrite(
   timeoutMs: number,
   maxOutputTokens: number,
 ): Promise<RewriteResult> {
-  const raw = await generateWithProvider(config, buildRewriteCoachPrompt(text, tone), timeoutMs, maxOutputTokens);
+  const raw = await generateWithProvider(config, buildRewriteCoachPrompt(text, tone), timeoutMs, maxOutputTokens, {
+    responseMimeType: "application/json",
+    responseJsonSchema: REWRITE_RESPONSE_SCHEMA,
+  });
   return parseRewriteResult(raw);
 }
 
@@ -35,7 +55,7 @@ export function parseRewriteResult(raw: string): RewriteResult {
     }
   }
 
-  return { rewritten: raw.trim(), why: "" };
+  throw new Error("The provider returned an invalid Rewrite & Coach JSON response. Please regenerate.");
 }
 
 function stripCodeFence(text: string): string {

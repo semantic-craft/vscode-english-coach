@@ -43,6 +43,11 @@ interface AnthropicCompatibleResponse {
   };
 }
 
+export interface GenerationOptions {
+  responseMimeType?: string;
+  responseJsonSchema?: Record<string, unknown>;
+}
+
 export async function translateWithProvider(config: ProviderConfig, request: TranslationRequest): Promise<string> {
   if (!config.apiKey) {
     throw new MissingAPIKeyError(`${config.title} API key is not configured.`);
@@ -65,6 +70,7 @@ export async function generateWithProvider(
   prompt: { system: string; user: string },
   timeoutMs: number,
   maxOutputTokens: number,
+  options: GenerationOptions = {},
 ): Promise<string> {
   if (!config.apiKey) {
     throw new MissingAPIKeyError(`${config.title} API key is not configured.`);
@@ -72,7 +78,7 @@ export async function generateWithProvider(
   validateProviderConfig(config);
 
   if (config.id === "gemini") {
-    return generateWithGeminiProtocol(config, prompt, timeoutMs, maxOutputTokens);
+    return generateWithGeminiProtocol(config, prompt, timeoutMs, maxOutputTokens, options);
   }
   if (config.apiProtocol === "anthropic") {
     return generateWithAnthropicProtocol(config, prompt, timeoutMs, maxOutputTokens);
@@ -85,7 +91,16 @@ async function generateWithGeminiProtocol(
   prompt: { system: string; user: string },
   timeoutMs: number,
   maxOutputTokens: number,
+  options: GenerationOptions = {},
 ): Promise<string> {
+  const generationConfig: Record<string, unknown> = { temperature: 0.3, maxOutputTokens };
+  if (options.responseMimeType) {
+    generationConfig.responseMimeType = options.responseMimeType;
+  }
+  if (options.responseJsonSchema) {
+    generationConfig.responseJsonSchema = options.responseJsonSchema;
+  }
+
   const response = await postJson<GeminiResponse>(
     geminiGenerateContentUrl(config.baseURL, config.model),
     timeoutMs,
@@ -96,7 +111,7 @@ async function generateWithGeminiProtocol(
     {
       system_instruction: { parts: [{ text: prompt.system }] },
       contents: [{ role: "user", parts: [{ text: prompt.user }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens },
+      generationConfig,
     },
   );
 
