@@ -1,6 +1,7 @@
 import {
   Action,
   ActionPanel,
+  closeMainWindow,
   Color,
   Icon,
   LaunchType,
@@ -10,6 +11,7 @@ import {
   openExtensionPreferences,
   showToast,
 } from "@raycast/api";
+import { execFile } from "node:child_process";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { addHistoryEntry } from "./history-store";
 import { LANGUAGE_CHOICES, getLanguageTitle, resolveTargetLanguage } from "./languages";
@@ -77,12 +79,15 @@ export default function Command() {
     setResults([]);
     setIsLoading(true);
 
+    await closeMainWindow({ clearRootSearch: false });
+
     try {
       const text = await recognizeScreenshotText(preferences);
 
       if (captureId !== captureSequence.current) return;
 
       if (!text) {
+        activateRaycast();
         setOcrFailed(true);
         setOcrTitle("No text detected");
         setOcrError("The capture had no recognizable text. Choose Retake Screenshot to try again.");
@@ -90,6 +95,7 @@ export default function Command() {
         return;
       }
 
+      activateRaycast();
       setSourceText(text);
       setOcrDone(true);
       await showToast({
@@ -100,6 +106,7 @@ export default function Command() {
     } catch (error) {
       if (captureId !== captureSequence.current) return;
 
+      activateRaycast();
       setIsLoading(false);
       const description = await reportOcrError(error);
       setOcrFailed(true);
@@ -448,6 +455,10 @@ function ItemActions(p: {
       </ActionPanel.Section>
     </ActionPanel>
   );
+}
+
+function activateRaycast(): void {
+  execFile("/usr/bin/osascript", ["-e", 'tell application "Raycast" to activate'], { timeout: 3000 }, () => undefined);
 }
 
 function preview(t: string): string {
