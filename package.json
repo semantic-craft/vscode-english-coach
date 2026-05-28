@@ -3,6 +3,7 @@
   "displayName": "English Coach",
   "description": "Rewrite your English (or Chinese) into idiomatic native English with a Chinese explanation of why — for learning while you vibe-code.",
   "version": "0.1.0",
+  "icon": "media/icon.png",
   "publisher": "xianwei-zhang",
   "license": "MIT",
   "author": "Xianwei Zhang",
