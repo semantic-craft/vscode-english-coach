@@ -187,6 +187,7 @@ export function wrapPCMInWAV(pcmData: Buffer, sampleRate: number): Buffer {
   header.writeUInt32LE(sampleRate, 24);
   header.writeUInt32LE(byteRate, 28);
   header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(PCM_BITS_PER_SAMPLE, 34);
   header.write("data", 36);
   header.writeUInt32LE(dataSize, 40);
   return Buffer.concat([header, pcmData]);
