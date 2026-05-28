@@ -1,25 +1,40 @@
-# English Coach (VS Code)
+# English Coach · 英语口语教练
 
-Rewrite your English (or Chinese) into idiomatic, native-sounding English while you code,
-with a Simplified-Chinese explanation of *why* the new version is more natural.
+用 **Qwen 通义千问 · DeepSeek · MiniMax 海螺 · 小米 MiMo · Gemini · GPT/OpenAI** 把你写的英文（或中文）改写成 **地道、像母语者** 的表达，并用 **中文讲解** 为什么这样更自然——一边写提示词（vibe coding）一边练英语口语，越用越会说。
 
-## Features
-- **Coach mode** — paste/type English → idiomatic rewrite + 中文讲解 (word choice, collocations, idioms, register).
-- **Translate mode** — Chinese (or any source) → target language, no coaching.
-- **Bring your own keys** — Qwen/DashScope (default), DeepSeek, Xiaomi MiMo, Gemini, Kimi, OpenAI. One provider at a time, switchable.
-- **Clipboard watch** — stage or auto-coach whatever you copy (off by default).
-- **Read aloud** — hear the native version (macOS). The Qwen/DashScope key also powers Qwen-TTS.
-- **Recent history** — every coach/translate is saved to the "Recent" view in the sidebar; click to restore, or copy/delete inline.
-- **@coach in Copilot Chat** — type `@coach <your English>` for a rewrite + explanation inline, or `@coach /translate <text>`.
+> Rewrite your English into natural, native-sounding phrasing with Simplified-Chinese explanations — powered by Qwen, DeepSeek, MiniMax, Xiaomi MiMo, Gemini and OpenAI. Bring your own key.
 
-## Setup
-1. Run **English Coach: Set API Key** and add at least one provider key.
-2. Enable providers and tune models/base URLs in Settings (`englishCoach.*`).
-3. Open the **English Coach** sidebar from the activity bar.
+## 功能 Features
 
-API keys are stored in VS Code SecretStorage (OS keychain), never in settings.json.
+- **教练模式 Coach** — 粘贴/输入英文 → 地道改写 + 中文讲解（用词、搭配、习语、语气）。
+- **翻译模式 Translate** — 中文（或任意语言）→ 目标语言，不带讲解。
+- **自带 Key（BYOK）** — Qwen(DashScope)、DeepSeek、MiniMax、小米 MiMo、Gemini、OpenAI，侧边栏一键切换。
+- **剪贴板监听 Clipboard watch** — 复制即教练（默认关，可选自动）。
+- **朗读 Read aloud (TTS)** — 听地道发音：Qwen-TTS / MiniMax / 小米 MiMo / Gemini（macOS）。
+- **最近记录 Recent** — 每次教练/翻译自动存档，点击即还原。
+- **@coach** — 在 Copilot Chat 里输入 `@coach <你的英文>` 直接改写讲解，或 `@coach /translate <文本>`。
 
-## Develop
+## 快速开始 Setup
+
+1. 侧边栏点 **🔑 API Key**（或命令面板运行 *English Coach: Set API Key*），默认填 **Qwen / DashScope** 的 key。
+2. 打开活动栏的 **English Coach** 侧边栏，输入英文按 `⌘↵`。
+3. 在设置 `englishCoach.*` 里启用更多 provider、调模型与 base URL。
+
+API key 存在 VS Code SecretStorage（系统钥匙串），不会写进 settings.json。
+
+## 支持的模型 Supported models
+
+| Provider | 用途 | 默认模型 |
+| --- | --- | --- |
+| Qwen / 通义千问 (DashScope) | 教练 + 朗读 | `qwen-plus` / `qwen3-tts-flash` |
+| DeepSeek | 教练 | `deepseek-v4-flash` |
+| MiniMax / 海螺 | 教练 + 朗读 | `MiniMax-M2.7-highspeed` / `speech-2.8-turbo` |
+| 小米 MiMo | 教练 + 朗读 | `mimo-v2.5-pro` / `mimo-v2.5-tts` |
+| Gemini | 教练 + 朗读 | `gemini-3.5-flash` |
+| OpenAI / GPT | 教练 | `gpt-4.1-mini` |
+
+## 开发 Develop
+
 - `npm install`
-- `npm run watch` then press F5 to launch the Extension Development Host
-- `npm test` runs the core unit tests
+- `npm run watch`，然后按 F5 打开 Extension Development Host
+- `npm test` 跑核心单测

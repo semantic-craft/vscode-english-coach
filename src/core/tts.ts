@@ -10,6 +10,14 @@ export interface TTSConfig {
   qwenLanguageType: string;
   qwenBaseURL: string;
   qwenInstructions: string;
+  mimoApiKey: string;
+  mimoBaseURL: string;
+  mimoModel: string;
+  mimoVoice: string;
+  minimaxApiKey: string;
+  minimaxBaseURL: string;
+  minimaxModel: string;
+  minimaxVoiceId: string;
 }
 
 export interface SynthesizeOptions {
@@ -29,6 +37,14 @@ const QWEN_TTS_DEFAULT_VOICE = "Cherry";
 const QWEN_TTS_MAX_CHARS = 550;
 const QWEN_TTS_SOFT_CHARS = 420;
 
+const MIMO_TTS_DEFAULT_BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1";
+const MIMO_TTS_DEFAULT_MODEL = "mimo-v2.5-tts";
+const MIMO_TTS_DEFAULT_VOICE = "Chloe";
+
+const MINIMAX_TTS_DEFAULT_BASE_URL = "https://api.minimaxi.com/v1";
+const MINIMAX_TTS_DEFAULT_MODEL = "speech-2.8-turbo";
+const MINIMAX_TTS_DEFAULT_VOICE = "male-qn-qingse";
+
 const PCM_CHANNELS = 1;
 const PCM_BITS_PER_SAMPLE = 16;
 
@@ -41,6 +57,16 @@ interface QwenTTSResponse {
   output?: { audio?: { data?: string; url?: string } };
   code?: string | number;
   message?: string;
+}
+
+interface MimoTTSResponse {
+  choices?: Array<{ message?: { audio?: { data?: string } } }>;
+  error?: { message?: string };
+}
+
+interface MinimaxTTSResponse {
+  data?: { audio?: string };
+  base_resp?: { status_code?: number; status_msg?: string };
 }
 
 /** Synthesize speech and return one playable audio buffer per chunk. Throws on failure. */
@@ -57,11 +83,7 @@ export async function synthesize(
   const buffers: Buffer[] = [];
   for (const chunk of chunks) {
     if (options.signal?.aborted) break;
-    const buf =
-      config.provider === "qwen"
-        ? await synthesizeWithQwen(chunk, slow, config, options.signal)
-        : await synthesizeWithGemini(chunk, slow, config, options.signal);
-    buffers.push(buf);
+    buffers.push(await synthesizeChunk(chunk, slow, config, options.signal));
   }
   return buffers;
 }
@@ -138,6 +160,72 @@ async function synthesizeWithQwen(
   const base64 = data.output?.audio?.data || (await fetchUrlAsBase64(data.output?.audio?.url, signal));
   if (!base64) throw new Error("Qwen TTS returned no audio.");
   return Buffer.from(base64, "base64");
+}
+
+function synthesizeChunk(text: string, slow: boolean, config: TTSConfig, signal?: AbortSignal): Promise<Buffer> {
+  switch (config.provider) {
+    case "qwen":
+      return synthesizeWithQwen(text, slow, config, signal);
+    case "mimo":
+      return synthesizeWithMimo(text, config, signal);
+    case "minimax":
+      return synthesizeWithMinimax(text, config, signal);
+    default:
+      return synthesizeWithGemini(text, slow, config, signal);
+  }
+}
+
+async function synthesizeWithMimo(text: string, config: TTSConfig, signal?: AbortSignal): Promise<Buffer> {
+  const apiKey = config.mimoApiKey.trim();
+  if (!apiKey) throw new Error("Add a MiMo API key to use MiMo read-aloud.");
+  const base = (config.mimoBaseURL.trim() || MIMO_TTS_DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const url = base.endsWith("/chat/completions") ? base : `${base}/chat/completions`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: config.mimoModel.trim() || MIMO_TTS_DEFAULT_MODEL,
+      messages: [{ role: "assistant", content: text }],
+      audio: { format: "wav", voice: config.mimoVoice.trim() || MIMO_TTS_DEFAULT_VOICE },
+    }),
+    signal,
+  });
+  const responseText = await response.text();
+  const data = parseJson<MimoTTSResponse>(responseText);
+  if (!response.ok || data.error?.message) {
+    throw new Error(data.error?.message ?? `MiMo TTS HTTP ${response.status}`);
+  }
+  const base64 = data.choices?.[0]?.message?.audio?.data;
+  if (!base64) throw new Error("MiMo TTS returned no audio.");
+  return Buffer.from(base64, "base64");
+}
+
+async function synthesizeWithMinimax(text: string, config: TTSConfig, signal?: AbortSignal): Promise<Buffer> {
+  const apiKey = config.minimaxApiKey.trim();
+  if (!apiKey) throw new Error("Add a MiniMax API key to use MiniMax read-aloud.");
+  const base = (config.minimaxBaseURL.trim() || MINIMAX_TTS_DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const url = base.endsWith("/t2a_v2") ? base : `${base}/t2a_v2`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: config.minimaxModel.trim() || MINIMAX_TTS_DEFAULT_MODEL,
+      text,
+      stream: false,
+      voice_setting: { voice_id: config.minimaxVoiceId.trim() || MINIMAX_TTS_DEFAULT_VOICE, speed: 1, vol: 1, pitch: 0 },
+      audio_setting: { sample_rate: 32000, format: "mp3", channel: 1 },
+    }),
+    signal,
+  });
+  const responseText = await response.text();
+  const data = parseJson<MinimaxTTSResponse>(responseText);
+  const code = data.base_resp?.status_code;
+  if (!response.ok || (code !== undefined && code !== 0)) {
+    throw new Error(data.base_resp?.status_msg ?? `MiniMax TTS HTTP ${response.status}`);
+  }
+  const hex = data.data?.audio;
+  if (!hex) throw new Error("MiniMax TTS returned no audio.");
+  return Buffer.from(hex, "hex");
 }
 
 async function fetchUrlAsBase64(url: string | undefined, signal?: AbortSignal): Promise<string | undefined> {

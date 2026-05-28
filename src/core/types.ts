@@ -16,7 +16,7 @@ export type OCRTextLayout = "formatted" | "compact";
 
 export type ProviderAPIProtocol = "openai" | "anthropic";
 
-export type TTSProvider = "qwen" | "gemini";
+export type TTSProvider = "qwen" | "gemini" | "mimo" | "minimax";
 
 export interface RuntimeSettings {
   modelTier: ModelTier;

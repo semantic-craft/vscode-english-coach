@@ -38,7 +38,8 @@ export async function readAloud(
 
 async function play(context: vscode.ExtensionContext, data: Buffer, signal: AbortSignal): Promise<void> {
   await vscode.workspace.fs.createDirectory(context.globalStorageUri);
-  const fileUri = vscode.Uri.joinPath(context.globalStorageUri, `tts-${Date.now()}-${randomBytes(4).toString("hex")}.wav`);
+  const ext = audioExtension(data);
+  const fileUri = vscode.Uri.joinPath(context.globalStorageUri, `tts-${Date.now()}-${randomBytes(4).toString("hex")}.${ext}`);
   await writeFile(fileUri.fsPath, data);
 
   await new Promise<void>((resolve, reject) => {
@@ -58,4 +59,12 @@ async function play(context: vscode.ExtensionContext, data: Buffer, signal: Abor
     activePlayback = child;
     signal.addEventListener("abort", abort, { once: true });
   });
+}
+
+/** Pick a file extension from the audio's magic bytes so afplay reads it correctly. */
+function audioExtension(data: Buffer): string {
+  if (data.length >= 4 && data.toString("ascii", 0, 4) === "RIFF") return "wav";
+  if (data.length >= 3 && data.toString("ascii", 0, 3) === "ID3") return "mp3";
+  if (data.length >= 2 && data[0] === 0xff && (data[1] & 0xe0) === 0xe0) return "mp3";
+  return "wav";
 }

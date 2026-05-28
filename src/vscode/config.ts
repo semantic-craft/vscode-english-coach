@@ -76,7 +76,8 @@ export async function getProviderConfig(
 
 export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TTSConfig> {
   const c = cfg();
-  const provider = c.get<string>("tts.provider") === "gemini" ? "gemini" : "qwen";
+  const raw = c.get<string>("tts.provider") ?? "qwen";
+  const provider = (["qwen", "gemini", "mimo", "minimax"].includes(raw) ? raw : "qwen") as TTSConfig["provider"];
   return {
     provider,
     geminiApiKey: (await getSecret(context, "gemini")) ?? "",
@@ -87,6 +88,14 @@ export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TT
     qwenLanguageType: c.get<string>("tts.qwenLanguageType") ?? "Auto",
     qwenBaseURL: c.get<string>("tts.qwenBaseURL") ?? "https://dashscope.aliyuncs.com/api/v1",
     qwenInstructions: c.get<string>("tts.qwenInstructions") ?? "",
+    mimoApiKey: (await getSecret(context, "mimo")) ?? "",
+    mimoBaseURL: c.get<string>("mimo.baseURL") ?? "https://token-plan-cn.xiaomimimo.com/v1",
+    mimoModel: c.get<string>("tts.mimoModel") ?? "mimo-v2.5-tts",
+    mimoVoice: c.get<string>("tts.mimoVoice") ?? "Chloe",
+    minimaxApiKey: (await getSecret(context, "minimax")) ?? "",
+    minimaxBaseURL: c.get<string>("tts.minimaxBaseURL") ?? "https://api.minimaxi.com/v1",
+    minimaxModel: c.get<string>("tts.minimaxModel") ?? "speech-2.8-turbo",
+    minimaxVoiceId: c.get<string>("tts.minimaxVoiceId") ?? "male-qn-qingse",
   };
 }
 
