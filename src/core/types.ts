@@ -26,14 +26,6 @@ export interface RuntimeSettings {
   ttsProvider: TTSProvider;
 }
 
-/**
- * Single source of truth for preferences is Raycast's generated `Preferences`
- * type (from `package.json`, emitted into `raycast-env.d.ts`). We re-export it
- * under the existing name so the rest of the codebase keeps importing
- * `ExtensionPreferences` from here, without hand-maintaining a duplicate that
- * can drift from the manifest.
- */
-export type ExtensionPreferences = Preferences;
 
 export interface ProviderConfig {
   id: ProviderId;
