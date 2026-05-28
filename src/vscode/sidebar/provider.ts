@@ -236,6 +236,7 @@ export class CoachViewProvider implements vscode.WebviewViewProvider {
   <div class="actions">
     <button id="coach">Coach (⌘↵)</button>
     <button id="fromClipboard" class="secondary">From clipboard</button>
+    <button id="setKey" class="secondary">🔑 API Key</button>
   </div>
   <div class="watch">
     <input type="checkbox" id="watchEnabled" /><label for="watchEnabled">Watch clipboard</label>

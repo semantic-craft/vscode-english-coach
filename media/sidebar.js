@@ -96,6 +96,7 @@ window.addEventListener("message", (event) => {
 document.addEventListener("DOMContentLoaded", () => {
   $("coach").onclick = run;
   $("fromClipboard").onclick = () => send("fromClipboard", {});
+  $("setKey").onclick = () => send("setApiKey", {});
   $("copy").onclick = () => send("copy", { text: lastNative });
   $("read").onclick = () => send("readAloud", { text: lastNative, slow: false });
   $("readSlow").onclick = () => send("readAloud", { text: lastNative, slow: true });

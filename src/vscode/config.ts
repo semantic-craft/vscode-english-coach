@@ -7,10 +7,10 @@ import { getSecret } from "./secrets";
 
 export const PROVIDER_TITLES: Record<ProviderId, string> = {
   qwen: "Qwen (DashScope)",
+  minimax: "MiniMax",
   deepseek: "DeepSeek",
   mimo: "Xiaomi MiMo",
   gemini: "Gemini",
-  kimi: "Kimi",
   openai: "OpenAI / ChatGPT",
 };
 

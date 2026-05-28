@@ -11,10 +11,10 @@ describe("detectProtocol", () => {
   });
   it("anthropic-shaped paths -> anthropic", () => {
     expect(detectProtocol("deepseek", "https://api.deepseek.com/anthropic")).toBe("anthropic");
-    expect(detectProtocol("kimi", "https://api.kimi.com/coding")).toBe("anthropic");
+    expect(detectProtocol("minimax", "https://api.minimaxi.com/anthropic")).toBe("anthropic");
   });
-  it("moonshot host and /v1 endpoints -> openai", () => {
-    expect(detectProtocol("kimi", "https://api.moonshot.ai/v1")).toBe("openai");
+  it("mimo /v1 token-plan endpoint -> openai", () => {
+    expect(detectProtocol("mimo", "https://token-plan-cn.xiaomimimo.com/v1")).toBe("openai");
   });
   it("qwen is always openai (DashScope compatible-mode)", () => {
     expect(detectProtocol("qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1")).toBe("openai");

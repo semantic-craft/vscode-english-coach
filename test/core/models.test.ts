@@ -13,6 +13,10 @@ describe("resolveModel", () => {
     expect(resolveModel("qwen", "fast", "")).toBe("qwen-plus");
     expect(resolveModel("qwen", "pro", "")).toBe("qwen-max");
   });
+  it("resolves the MiniMax high-speed model", () => {
+    expect(resolveModel("minimax", "fast", "")).toBe("MiniMax-M2.7-highspeed");
+    expect(resolveModel("minimax", "pro", "")).toBe("MiniMax-M2.7-highspeed");
+  });
 });
 
 describe("getTierLabel", () => {

@@ -53,15 +53,13 @@ const MODEL_CATALOG: Record<ProviderId, ProviderModels> = {
       { id: "gemini-2.5-pro", title: "2.5 Pro" },
     ],
   },
-  kimi: {
-    fast: { id: "kimi-for-coding", title: "Kimi for Coding" },
-    pro: { id: "kimi-for-coding", title: "Kimi for Coding" },
+  minimax: {
+    fast: { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
+    pro: { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
     all: [
-      { id: "kimi-for-coding", title: "Kimi for Coding (K2.6 alias)" },
-      { id: "kimi-k2.6", title: "K2.6 (Moonshot endpoint)" },
-      { id: "kimi-k2.5", title: "K2.5 (Moonshot endpoint)" },
-      { id: "moonshot-v1-8k", title: "Moonshot v1 8K (Moonshot endpoint)" },
-      { id: "moonshot-v1-32k", title: "Moonshot v1 32K (Moonshot endpoint)" },
+      { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
+      { id: "MiniMax-M2.7", title: "M2.7" },
+      { id: "MiniMax-M2.5", title: "M2.5" },
     ],
   },
   openai: {
