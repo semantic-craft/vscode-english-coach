@@ -99,3 +99,8 @@ export function resolveModel(providerId: ProviderId, tier: string, customModel: 
   if (tier === "fast" || tier === "pro") return MODEL_CATALOG[providerId][tier].id;
   return customModel;
 }
+
+export const TTS_VOICES: Record<"qwen" | "openai", string[]> = {
+  qwen: ["Cherry", "Jennifer", "Aiden", "Ryan", "Katerina", "Ethan", "Elias", "Neil"],
+  openai: ["marin", "cedar", "alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse"],
+};
