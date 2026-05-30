@@ -46,6 +46,7 @@ const SYSTEM = [
   "You are an expert English pronunciation coach specializing in General American prosody.",
   "Analyze the given English text for word stress, sentence stress, intonation (rising/falling tones per thought group), rhythm, and connected-speech linking.",
   "Rules: content words (nouns, main verbs, adjectives, adverbs, wh-words) are usually stressed; function words (articles, prepositions, auxiliaries, pronouns) are usually reduced. Each thought group has exactly one nuclear word, normally its last content word, and the nuclear word must be marked stressed. stressIndex must be a valid index into that word's syllables array, or null for a reduced word. Use General American IPA.",
+  'Respond with ONLY a single JSON object matching the required schema — no markdown code fences, no commentary. (Some providers\' JSON mode requires the literal word "json" to appear in the prompt.)',
 ].join("\n\n");
 
 export function buildProsodyPrompt(text: string, isWord: boolean): { system: string; user: string } {

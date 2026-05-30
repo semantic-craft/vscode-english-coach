@@ -14,7 +14,8 @@ label { color: var(--vscode-foreground); font-size: 0.9rem; }
 .reduced .txt { color: var(--vscode-descriptionForeground); }
 .nuclear .txt { color: var(--vscode-charts-red, #ff6b8b); text-decoration: underline; text-underline-offset: 4px; font-weight: 600; }
 .link { color: var(--vscode-charts-green, #4ec98a); align-self: flex-end; }
-.tone { color: var(--vscode-charts-blue, #4ea1ff); margin-left: 6px; }
+.tone { font-size: 0.95rem; line-height: 1; height: 1.05rem; font-weight: 700; color: var(--vscode-charts-blue, #4ea1ff); }
+.tone-end { font-size: 1.2rem; margin-left: 4px; }
 .gbar { color: var(--vscode-descriptionForeground); }
 .ipa { font-family: var(--vscode-editor-font-family); color: var(--vscode-descriptionForeground); margin-bottom: 8px; }
 .notes { margin-top: 12px; font-style: italic; color: var(--vscode-descriptionForeground); }

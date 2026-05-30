@@ -14,9 +14,18 @@ function renderStave(rows) {
   rows.forEach((row, ri) => {
     const group = document.createElement("span");
     group.className = "group";
+    let tonePlaced = false;
     row.tokens.forEach((t) => {
       const word = document.createElement("span");
       word.className = "word " + (t.nuclear ? "nuclear" : t.stressed ? "stressed" : "reduced");
+      if (t.nuclear) {
+        const tn = document.createElement("span");
+        tn.className = "tone";
+        tn.textContent = TONE[row.tone] || "→";
+        tn.title = "intonation: " + (row.tone || "level");
+        word.appendChild(tn);
+        tonePlaced = true;
+      }
       const mark = document.createElement("span");
       mark.className = "mark";
       mark.textContent = t.stressed || t.nuclear ? "●" : "·";
@@ -35,10 +44,12 @@ function renderStave(rows) {
       }
       group.appendChild(document.createTextNode(" "));
     });
-    const tone = document.createElement("span");
-    tone.className = "tone";
-    tone.textContent = TONE[row.tone] || "";
-    group.appendChild(tone);
+    if (!tonePlaced) {
+      const tn = document.createElement("span");
+      tn.className = "tone tone-end";
+      tn.textContent = TONE[row.tone] || "→";
+      group.appendChild(tn);
+    }
     el.appendChild(group);
     if (ri < rows.length - 1) {
       const g = document.createElement("span");
