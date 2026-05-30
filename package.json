@@ -2,7 +2,7 @@
   "name": "vscode-say-it-right",
   "displayName": "Say It Right",
   "description": "Practice English pronunciation in VS Code with stress, intonation, rhythm, linking, IPA, shadowing loops, and model speech.",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "keywords": [
     "english",
     "pronunciation",
@@ -381,7 +381,7 @@
           ],
           "default": "English_expressive_narrator"
         },
-        "sayItRight.provider": {
+        "sayItRight.analysisProvider": {
           "type": "string",
           "enum": [
             "qwen",
@@ -391,7 +391,19 @@
             "openai"
           ],
           "default": "qwen",
-          "description": "Provider used by the Say It Right pronunciation player for analysis and model speech."
+          "description": "Provider used by the pronunciation player's analysis engine (stress/intonation). Can differ from the speech provider."
+        },
+        "sayItRight.speechProvider": {
+          "type": "string",
+          "enum": [
+            "qwen",
+            "minimax",
+            "mimo",
+            "gemini",
+            "openai"
+          ],
+          "default": "qwen",
+          "description": "Provider used by the pronunciation player's speech (TTS) engine. Can differ from the analysis provider, e.g. Qwen analysis on a token-plan endpoint + Gemini speech."
         },
         "sayItRight.analysisModel.qwen": {
           "type": "string",

@@ -10,7 +10,7 @@ import {
 import { detectProtocol } from "../core/providers";
 import { TTSConfig } from "../core/tts";
 import { ModelTier, PROVIDER_IDS, ProviderConfig, ProviderId } from "../core/types";
-import { getSecret } from "./secrets";
+import { getSecret, getSpeechSecret } from "./secrets";
 
 export interface TtsTarget {
   provider: SayItRightProviderId;
@@ -101,20 +101,20 @@ export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TT
   const provider = (["qwen", "gemini", "mimo", "minimax"].includes(raw) ? raw : "qwen") as TTSConfig["provider"];
   return {
     provider,
-    geminiApiKey: (await getSecret(context, "gemini")) ?? "",
+    geminiApiKey: (await getSpeechSecret(context, "gemini")) || (await getSecret(context, "gemini")) || "",
     geminiModel: c.get<string>("tts.geminiModel") ?? "gemini-3.1-flash-tts-preview",
     geminiVoice: c.get<string>("tts.geminiVoice") ?? "Charon",
-    dashscopeApiKey: (await getSecret(context, "qwen")) ?? "",
+    dashscopeApiKey: (await getSpeechSecret(context, "qwen")) || (await getSecret(context, "qwen")) || "",
     qwenModel: c.get<string>("tts.qwenModel") ?? "qwen3-tts-flash",
     qwenVoice: c.get<string>("tts.qwenVoice") ?? "Jennifer",
     qwenLanguageType: c.get<string>("tts.qwenLanguageType") ?? "Auto",
     qwenBaseURL: c.get<string>("tts.qwenBaseURL") ?? "https://dashscope.aliyuncs.com/api/v1",
     qwenInstructions: c.get<string>("tts.qwenInstructions") ?? "",
-    mimoApiKey: (await getSecret(context, "mimo")) ?? "",
+    mimoApiKey: (await getSpeechSecret(context, "mimo")) || (await getSecret(context, "mimo")) || "",
     mimoBaseURL: c.get<string>("mimo.baseURL") ?? "https://token-plan-cn.xiaomimimo.com/v1",
     mimoModel: c.get<string>("tts.mimoModel") ?? "mimo-v2.5-tts",
     mimoVoice: c.get<string>("tts.mimoVoice") ?? "Chloe",
-    minimaxApiKey: (await getSecret(context, "minimax")) ?? "",
+    minimaxApiKey: (await getSpeechSecret(context, "minimax")) || (await getSecret(context, "minimax")) || "",
     minimaxBaseURL: c.get<string>("tts.minimaxBaseURL") ?? "https://api.minimaxi.com/v1",
     minimaxModel: c.get<string>("tts.minimaxModel") ?? "speech-2.8-turbo",
     minimaxVoiceId: c.get<string>("tts.minimaxVoiceId") ?? "English_expressive_narrator",
@@ -125,10 +125,24 @@ function sirCfg() {
   return vscode.workspace.getConfiguration("sayItRight");
 }
 
+/**
+ * The player runs two independent engines: an analysis engine and a speech engine. Each picks its
+ * own provider (so e.g. Qwen analysis can pair with Gemini speech, or Qwen-on-token-plan analysis
+ * with Qwen-on-the-regular-endpoint speech). Falls back to the legacy single `provider` setting,
+ * then to qwen.
+ */
+export function getSayItRightProvider(role: "analysis" | "speech"): SayItRightProviderId {
+  const c = sirCfg();
+  const key = role === "analysis" ? "analysisProvider" : "speechProvider";
+  const specific = (c.get<string>(key) ?? "").trim();
+  if (isSayItRightProviderId(specific)) return specific;
+  const legacy = (c.get<string>("provider") ?? "").trim();
+  return isSayItRightProviderId(legacy) ? legacy : "qwen";
+}
+
 export async function getAnalysisConfig(context: vscode.ExtensionContext): Promise<ProviderConfig> {
   const c = sirCfg();
-  const rawProvider = c.get<string>("provider") ?? "qwen";
-  const provider = isSayItRightProviderId(rawProvider) ? rawProvider : "qwen";
+  const provider = getSayItRightProvider("analysis");
   const base = await getProviderConfig(context, provider);
   const overrideModel = (c.get<string>(`analysisModel.${provider}`) ?? "").trim();
   return { ...base, model: overrideModel || DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS[provider] || base.model };
@@ -136,9 +150,11 @@ export async function getAnalysisConfig(context: vscode.ExtensionContext): Promi
 
 export async function getTtsTarget(context: vscode.ExtensionContext): Promise<TtsTarget> {
   const c = sirCfg();
-  const rawProvider = c.get<string>("provider") ?? "qwen";
-  const provider = isSayItRightProviderId(rawProvider) ? rawProvider : "qwen";
+  const provider = getSayItRightProvider("speech");
   const base = await getProviderConfig(context, provider);
+  // Speech can use its own API key (falls back to the provider's main key), so e.g. analysis runs on
+  // a token-plan key while speech runs on the regular endpoint with a regular key.
+  const apiKey = (await getSpeechSecret(context, provider)) || base.apiKey;
   return {
     provider,
     voice: (c.get<string>(`voice.${provider}`) ?? "").trim() || DEFAULT_TTS_VOICES[provider],
@@ -146,6 +162,6 @@ export async function getTtsTarget(context: vscode.ExtensionContext): Promise<Tt
     ttsModel: (c.get<string>(`ttsModel.${provider}`) ?? "").trim() || DEFAULT_SAY_IT_RIGHT_TTS_MODELS[provider],
     ttsInstructModel: (c.get<string>("ttsInstructModel.qwen") ?? "").trim() || "qwen3-tts-instruct-flash",
     baseURL: base.baseURL,
-    apiKey: base.apiKey,
+    apiKey,
   };
 }

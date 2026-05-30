@@ -19,14 +19,22 @@ import {
   TTS_VOICES,
   SayItRightProviderId,
 } from "../../core/models";
-import { getAnalysisConfig, getProviderConfig, getTtsTarget, getTTSConfig, PROVIDER_TITLES, TtsTarget } from "../config";
+import {
+  getAnalysisConfig,
+  getProviderConfig,
+  getSayItRightProvider,
+  getTtsTarget,
+  getTTSConfig,
+  PROVIDER_TITLES,
+  TtsTarget,
+} from "../config";
 import { cacheAudio, audioCacheKey } from "../audio-cache";
 import { audioExtension } from "../audio";
 import { getCachedTimings, putTimings } from "../asr-cache";
 import { Recorder } from "../recorder";
 import { ProviderConfig } from "../../core/types";
 
-type ConfigKey = "provider" | "analysisModel" | "ttsModel" | "voice";
+type ConfigKey = "analysisProvider" | "speechProvider" | "analysisModel" | "ttsModel" | "voice";
 
 interface PlayerMessage {
   type: string;
@@ -119,7 +127,7 @@ export class SayItRightPanel {
   /** Stamp that invalidates cached analyses when the analysis provider/model changes. */
   private currentStamp(): string {
     const c = vscode.workspace.getConfiguration("sayItRight");
-    const provider = this.readSelectedProvider();
+    const provider = this.readAnalysisProvider();
     const model = (c.get<string>(`analysisModel.${provider}`) ?? "").trim() || DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS[provider];
     return `${provider}::${model}`;
   }
@@ -258,30 +266,37 @@ export class SayItRightPanel {
     if (!key || !value) return;
     const c = vscode.workspace.getConfiguration("sayItRight");
     const target = vscode.ConfigurationTarget.Global;
-    const provider = this.parseProvider(m.provider) ?? this.readSelectedProvider();
+    const analysisProvider = this.readAnalysisProvider();
+    const speechProvider = this.readSpeechProvider();
 
     switch (key) {
-      case "provider":
+      case "analysisProvider":
         if (!this.parseProvider(value)) return;
-        await c.update("provider", value, target);
+        await c.update("analysisProvider", value, target);
         this.clearAudio();
         this.postPlayerConfig();
         return this.renderPage();
+      case "speechProvider":
+        if (!this.parseProvider(value)) return;
+        await c.update("speechProvider", value, target);
+        this.clearAudio();
+        this.postPlayerConfig();
+        return;
       case "analysisModel":
-        if (!SAY_IT_RIGHT_ANALYSIS_MODELS[provider].some((model) => model.id === value)) return;
-        await c.update(`analysisModel.${provider}`, value, target);
+        if (!SAY_IT_RIGHT_ANALYSIS_MODELS[analysisProvider].some((model) => model.id === value)) return;
+        await c.update(`analysisModel.${analysisProvider}`, value, target);
         this.clearAudio();
         this.postPlayerConfig();
         return this.renderPage();
       case "ttsModel":
-        if (!SAY_IT_RIGHT_TTS_MODELS[provider].some((model) => model.id === value)) return;
-        await c.update(`ttsModel.${provider}`, value, target);
+        if (!SAY_IT_RIGHT_TTS_MODELS[speechProvider].some((model) => model.id === value)) return;
+        await c.update(`ttsModel.${speechProvider}`, value, target);
         this.clearAudio();
         this.postPlayerConfig();
         return;
       case "voice":
-        if (!TTS_VOICES[provider].includes(value)) return;
-        await c.update(`voice.${provider}`, value, target);
+        if (!TTS_VOICES[speechProvider].includes(value)) return;
+        await c.update(`voice.${speechProvider}`, value, target);
         this.clearAudio();
         this.postPlayerConfig();
         return;
@@ -295,7 +310,8 @@ export class SayItRightPanel {
 
   private postPlayerConfig(): void {
     const c = vscode.workspace.getConfiguration("sayItRight");
-    const provider = this.readSelectedProvider();
+    const analysisProvider = this.readAnalysisProvider();
+    const speechProvider = this.readSpeechProvider();
     this.post({
       type: "config",
       loopCount: c.get<number>("loopCount", 3),
@@ -307,19 +323,24 @@ export class SayItRightPanel {
       ttsModels: Object.fromEntries(SAY_IT_RIGHT_PROVIDER_IDS.map((id) => [id, SAY_IT_RIGHT_TTS_MODELS[id]])),
       voices: Object.fromEntries(SAY_IT_RIGHT_PROVIDER_IDS.map((id) => [id, TTS_VOICES[id].map((v) => ({ id: v, title: v }))])),
       selection: {
-        provider,
+        analysisProvider,
+        speechProvider,
         analysisModel:
-          (c.get<string>(`analysisModel.${provider}`) ?? "").trim() ||
-          DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS[provider],
+          (c.get<string>(`analysisModel.${analysisProvider}`) ?? "").trim() ||
+          DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS[analysisProvider],
         ttsModel:
-          (c.get<string>(`ttsModel.${provider}`) ?? "").trim() || DEFAULT_SAY_IT_RIGHT_TTS_MODELS[provider],
-        voice: (c.get<string>(`voice.${provider}`) ?? "").trim() || DEFAULT_TTS_VOICES[provider],
+          (c.get<string>(`ttsModel.${speechProvider}`) ?? "").trim() || DEFAULT_SAY_IT_RIGHT_TTS_MODELS[speechProvider],
+        voice: (c.get<string>(`voice.${speechProvider}`) ?? "").trim() || DEFAULT_TTS_VOICES[speechProvider],
       },
     });
   }
 
-  private readSelectedProvider(): SayItRightProviderId {
-    return this.parseProvider(vscode.workspace.getConfiguration("sayItRight").get<string>("provider")) ?? "qwen";
+  private readAnalysisProvider(): SayItRightProviderId {
+    return getSayItRightProvider("analysis");
+  }
+
+  private readSpeechProvider(): SayItRightProviderId {
+    return getSayItRightProvider("speech");
   }
 
   private parseProvider(value: unknown): SayItRightProviderId | undefined {
@@ -560,9 +581,14 @@ export class SayItRightPanel {
 <body>
   <div class="bar"><button id="prev">◀</button><span id="pos"></span><button id="next">▶</button></div>
   <div class="settings">
-    <label>Provider <select id="provider"></select></label>
-    <label>Analysis <select id="analysisModel"></select></label>
-    <label>Speech <select id="ttsModel"></select></label>
+    <span class="engine-label">Analysis</span>
+    <label>Provider <select id="analysisProvider"></select></label>
+    <label>Model <select id="analysisModel"></select></label>
+  </div>
+  <div class="settings">
+    <span class="engine-label">Speech</span>
+    <label>Provider <select id="speechProvider"></select></label>
+    <label>Model <select id="ttsModel"></select></label>
     <label>Voice <select id="voice"></select></label>
     <button id="setKey">API Key</button>
   </div>

@@ -11,7 +11,8 @@ describe("extension manifest provider defaults", () => {
   });
 
   it("exposes analysis, speech model, and voice choices for MiniMax and MiMo", () => {
-    expect(properties["sayItRight.provider"].enum).toEqual(expect.arrayContaining(["minimax", "mimo"]));
+    expect(properties["sayItRight.analysisProvider"].enum).toEqual(expect.arrayContaining(["minimax", "mimo"]));
+    expect(properties["sayItRight.speechProvider"].enum).toEqual(expect.arrayContaining(["minimax", "mimo"]));
     expect(properties["sayItRight.analysisModel.minimax"].enum).toContain("MiniMax-M2.7-highspeed");
     expect(properties["sayItRight.analysisModel.mimo"].enum).toContain("mimo-v2.5-pro");
     expect(properties["sayItRight.ttsModel.minimax"].enum).toContain("speech-2.8-turbo");

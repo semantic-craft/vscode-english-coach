@@ -20,7 +20,8 @@ let timings = [];
 let timingsEstimated = false;
 let recording = false;
 let playerConfig = {
-  provider: "qwen",
+  analysisProvider: "qwen",
+  speechProvider: "qwen",
   providers: [],
   analysisModels: {},
   ttsModels: {},
@@ -53,21 +54,24 @@ function fillSelect(id, options, selected) {
 function applyPlayerConfig(msg) {
   const selection = msg.selection || {};
   playerConfig = {
-    provider: selection.provider || "qwen",
+    analysisProvider: selection.analysisProvider || "qwen",
+    speechProvider: selection.speechProvider || "qwen",
     providers: msg.providers || [],
     analysisModels: msg.analysisModels || {},
     ttsModels: msg.ttsModels || {},
     voices: msg.voices || {},
   };
-  fillSelect("provider", playerConfig.providers, playerConfig.provider);
-  fillSelect("analysisModel", playerConfig.analysisModels[playerConfig.provider], selection.analysisModel);
-  fillSelect("ttsModel", playerConfig.ttsModels[playerConfig.provider], selection.ttsModel);
-  fillSelect("voice", playerConfig.voices[playerConfig.provider], selection.voice);
+  fillSelect("analysisProvider", playerConfig.providers, playerConfig.analysisProvider);
+  fillSelect("analysisModel", playerConfig.analysisModels[playerConfig.analysisProvider], selection.analysisModel);
+  fillSelect("speechProvider", playerConfig.providers, playerConfig.speechProvider);
+  fillSelect("ttsModel", playerConfig.ttsModels[playerConfig.speechProvider], selection.ttsModel);
+  fillSelect("voice", playerConfig.voices[playerConfig.speechProvider], selection.voice);
 }
 
-function setPlayerConfig(key, value, provider) {
+// The host derives the analysis/speech provider from settings, so we only need to send key + value.
+function setPlayerConfig(key, value) {
   clearAudio();
-  send("setConfig", { key, value, provider: provider || playerConfig.provider });
+  send("setConfig", { key, value });
 }
 
 function makeEl(tag, className, text) {
@@ -478,8 +482,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportMine = $("exportMine");
   if (exportMine) exportMine.onclick = () => send("exportMine");
   $("setKey").onclick = () => send("setApiKey");
-  $("provider").onchange = (e) => setPlayerConfig("provider", e.target.value, e.target.value);
+  $("analysisProvider").onchange = (e) => setPlayerConfig("analysisProvider", e.target.value);
   $("analysisModel").onchange = (e) => setPlayerConfig("analysisModel", e.target.value);
+  $("speechProvider").onchange = (e) => setPlayerConfig("speechProvider", e.target.value);
   $("ttsModel").onchange = (e) => setPlayerConfig("ttsModel", e.target.value);
   $("voice").onchange = (e) => setPlayerConfig("voice", e.target.value);
   setSpeed(1);
