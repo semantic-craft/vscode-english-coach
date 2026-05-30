@@ -93,7 +93,26 @@ describe("generateWithProvider (Gemini protocol)", () => {
     const body = JSON.parse(String(init?.body));
     expect(body.generationConfig.responseMimeType).toBe("application/json");
     expect(body.generationConfig.responseFormat).toBeUndefined();
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 0 });
     expect(body.system_instruction.parts[0].text).toContain("Structured output requirements");
     expect(body.system_instruction.parts[0].text).toContain("JSON schema");
+  });
+
+  it("keeps thinking enabled for Gemini Pro models (which require it)", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "{}" }] } }] }), { status: 200 }),
+    );
+    const config: ProviderConfig = {
+      id: "gemini",
+      title: "Gemini",
+      apiKey: "gem-test",
+      baseURL: "https://generativelanguage.googleapis.com/v1beta",
+      model: "gemini-3.1-pro-preview",
+      apiProtocol: "openai",
+    };
+    await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256, { responseMimeType: "application/json" });
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body.generationConfig.thinkingConfig).toBeUndefined();
   });
 });

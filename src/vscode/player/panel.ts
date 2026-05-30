@@ -167,7 +167,9 @@ export class SayItRightPanel {
       try {
         const cfg = await getAnalysisConfig(this.context);
         const isWord = /\b\w+\b/.test(sentence) && sentence.trim().split(/\s+/).length === 1;
-        const analysis = await analyzeProsody(sentence, cfg, 45000, 2048, isWord);
+        // 8192 (not 2048): the per-syllable JSON plus any model "thinking" tokens can overrun a
+        // small budget and truncate the response mid-string. Headroom keeps the JSON complete.
+        const analysis = await analyzeProsody(sentence, cfg, 45000, 8192, isWord);
         const rows = toStave(analysis);
         cached = {
           text: analysis.text,

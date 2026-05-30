@@ -100,6 +100,14 @@ async function generateWithGeminiProtocol(
   options: GenerationOptions = {},
 ): Promise<string> {
   const generationConfig: Record<string, unknown> = { temperature: 0.3, maxOutputTokens };
+  // Gemini 2.5+ Flash enable "thinking" by default, and thinking tokens are drawn from
+  // maxOutputTokens — which can exhaust the budget and truncate the JSON answer mid-string
+  // ("Unterminated string in JSON"). Disable thinking for Flash models (where a 0 budget is
+  // allowed) so the whole budget goes to the response, matching how we disable it for the
+  // Anthropic/MiMo paths. Pro models (which require thinking) are left untouched.
+  if (/flash/i.test(config.model)) {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  }
   const structuredPrompt = applyStructuredPromptOptions(prompt, options);
   applyGeminiResponseFormat(generationConfig, options);
 

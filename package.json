@@ -2,7 +2,7 @@
   "name": "vscode-say-it-right",
   "displayName": "Say It Right",
   "description": "Practice English pronunciation in VS Code with stress, intonation, rhythm, linking, IPA, shadowing loops, and model speech.",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "keywords": [
     "english",
     "pronunciation",
@@ -52,7 +52,7 @@
         {
           "id": "englishCoach",
           "title": "Say It Right",
-          "icon": "media/icon.png"
+          "icon": "media/icon-bar.svg"
         }
       ]
     },
