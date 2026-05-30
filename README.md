@@ -14,6 +14,16 @@
 - **最近记录 Recent** — 每次教练/翻译自动存档，点击即还原。
 - **@coach** — 在 Copilot Chat 里输入 `@coach <你的英文>` 直接改写讲解，或 `@coach /translate <文本>`。
 
+## Say It Right — 发音教练 (pronunciation)
+
+Select English text in the editor → right-click **Say It Right: Analyze Selection** (or run **Say It Right: Practice a Sentence**). A player opens showing the sentence's **prosody stave** — stress (●) / reduced (·), the nuclear word, rising/falling tone per thought group, connected-speech links, and General American IPA — plus a model voice you can:
+
+- play at **0.25×–4×** (pitch-preserved) and a **Teacher slow** clear re-reading,
+- **AB-repeat** a sentence, run a **Shadow ×N** loop with gaps, and step sentence by sentence,
+- **export** the model audio.
+
+Powered by Qwen (`qwen3.5-flash` analysis, `qwen3-tts(-instruct)-flash` voice) or OpenAI (`gpt-5.4-nano` + `gpt-4o-mini-tts`). Configure under `sayItRight.*`.
+
 ## 快速开始 Setup
 
 1. 侧边栏点 **🔑 API Key**（或命令面板运行 *English Coach: Set API Key*），默认填 **Qwen / DashScope** 的 key。
