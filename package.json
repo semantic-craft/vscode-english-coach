@@ -2,7 +2,7 @@
   "name": "vscode-say-it-right",
   "displayName": "Say It Right",
   "description": "Practice English pronunciation in VS Code with stress, intonation, rhythm, linking, IPA, shadowing loops, and model speech.",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "keywords": [
     "english",
     "pronunciation",
@@ -257,7 +257,7 @@
         },
         "englishCoach.mimo.baseURL": {
           "type": "string",
-          "default": "https://token-plan-cn.xiaomimimo.com/v1"
+          "default": "https://token-plan-cn.xiaomimimo.com/anthropic"
         },
         "englishCoach.mimo.model": {
           "type": "string",
@@ -624,6 +624,7 @@
     "vscode:prepublish": "node esbuild.js --production",
     "check": "tsc --noEmit",
     "test": "vitest run",
+    "eval:intent-expression": "mkdir -p .tmp && npx esbuild scripts/intent-expression-eval.ts --bundle --platform=node --format=esm --target=node18 --outfile=.tmp/intent-expression-eval.mjs && node .tmp/intent-expression-eval.mjs",
     "format": "prettier --write ."
   },
   "devDependencies": {

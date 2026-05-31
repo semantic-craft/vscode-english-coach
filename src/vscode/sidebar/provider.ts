@@ -335,9 +335,8 @@ export class CoachViewProvider implements vscode.WebviewViewProvider {
   <div class="row">
     <label>Mode</label>
     <select id="mode">
-      <option value="coach">Coach</option>
-      <option value="express">中译英 / Native English</option>
-      <option value="translate">Translate</option>
+      <option value="coach">Polish English</option>
+      <option value="express">Say It in English</option>
     </select>
     <label>Provider</label>
     <select id="provider"></select>
@@ -354,19 +353,17 @@ export class CoachViewProvider implements vscode.WebviewViewProvider {
   <div class="row" id="toneRow"><label>Tone</label><select id="tone">${tones}</select></div>
   <div class="row hidden" id="langRow"><label>Target</label><select id="targetLanguage">${langs}</select></div>
   <textarea id="input"></textarea>
-  <div class="actions">
-    <button id="coach">Coach (⌘↵)</button>
-    <button id="expressAction" class="secondary">中译英</button>
-    <button id="translateAction" class="secondary">Translate</button>
-    <button id="pronunciation" class="secondary">🎙 发音 / Pronunciation</button>
-    <button id="setKey" class="secondary">🔑 API Key</button>
+  <div class="actions primary-actions">
+    <button id="coach">Polish English (⌘↵)</button>
+    <button id="setKey" class="secondary icon-button" title="API Keys" aria-label="API Keys">🔑</button>
   </div>
   <hr />
-  <div class="section-title" id="resultTitle">✨ Native version</div>
-  <div id="native" class="native muted">Your idiomatic version will appear here.</div>
+  <div class="section-title" id="resultTitle">✨ Polished English</div>
+  <div id="native" class="native muted">Your polished English will appear here.</div>
   <div class="actions hidden" id="resultActions">
-    <button id="star" class="secondary">⭐ 收藏</button>
     <button id="copy" class="secondary">Copy</button>
+    <button id="pronunciation" class="secondary">🎙 Practice</button>
+    <button id="star" class="secondary">⭐ 收藏</button>
   </div>
   <div id="diffWrap"><div class="section-title">🔁 改了什么</div><div id="diff" class="diff"></div></div>
   <div id="whyWrap"><div class="section-title">💡 为什么更自然</div><div id="why" class="why"></div></div>

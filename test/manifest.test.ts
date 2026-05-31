@@ -21,6 +21,7 @@ describe("extension manifest provider defaults", () => {
     expect(properties["englishCoach.qwen.model"].default).toBe("qwen3.6-flash");
     expect(properties["englishCoach.gemini.model"].enum).toEqual(["gemini-3.5-flash"]);
     expect(properties["englishCoach.minimax.model"].enum).toEqual(["MiniMax-M2.7-highspeed"]);
+    expect(properties["englishCoach.mimo.baseURL"].default).toBe("https://token-plan-cn.xiaomimimo.com/anthropic");
     expect(properties["englishCoach.mimo.model"].default).toBe("mimo-v2.5");
     expect(properties["englishCoach.openai.model"].enum).toEqual(["gpt-5.5"]);
     expect(properties["englishCoach.openai.model"].default).toBe("gpt-5.5");
@@ -49,20 +50,27 @@ describe("extension manifest provider defaults", () => {
   it("uses mode-specific sidebar copy so Native English does not look English-only", () => {
     const sidebarScript = readFileSync(new URL("../media/sidebar.js", import.meta.url), "utf8");
     const sidebarProvider = readFileSync(new URL("../src/vscode/sidebar/provider.ts", import.meta.url), "utf8");
-    expect(sidebarScript).toContain('placeholder: "输入中文意思，让模型用自然英文表达…"');
-    expect(sidebarScript).toContain('placeholder: "Type or paste your English here…"');
-    expect(sidebarScript).toContain('placeholder: "Type or paste text to translate…"');
+    expect(sidebarScript).toContain('placeholder: "输入中文意思；我会用真实地道的英文表达…"');
+    expect(sidebarScript).toContain('placeholder: "Type or paste English to polish…"');
     expect(sidebarScript).toContain('$("resultTitle").textContent = copy.resultTitle');
-    expect(sidebarProvider).toContain('id="expressAction"');
-    expect(sidebarProvider).toContain('id="translateAction"');
+    expect(sidebarProvider).toContain('option value="coach">Polish English');
+    expect(sidebarProvider).toContain('option value="express">Say It in English');
+    expect(sidebarProvider).not.toContain('option value="translate"');
+    expect(sidebarProvider).not.toContain('id="translateAction"');
+    expect(sidebarProvider).toContain('class="actions primary-actions"');
+    expect(sidebarProvider).toContain('class="secondary icon-button"');
+    expect(sidebarProvider).toContain('id="pronunciation" class="secondary">🎙 Practice');
   });
 
   it("keeps translation and Chinese-expression results out of the English diff renderer", () => {
     const sidebarScript = readFileSync(new URL("../media/sidebar.js", import.meta.url), "utf8");
     expect(sidebarScript).toContain("function hasCjk(text)");
     expect(sidebarScript).toContain('currentDiffSuppressed = msg.mode === "express" || hasCjk(msg.source || "")');
-    expect(sidebarScript).toContain('$("expressAction").onclick = () => run("express")');
-    expect(sidebarScript).toContain('$("translateAction").onclick = () => run("translate")');
+    expect(sidebarScript).toContain(
+      'state.mode = e.kind === "express" || e.kind === "translate" ? "express" : "coach"',
+    );
+    expect(sidebarScript).toContain("Polish English (⌘↵)");
+    expect(sidebarScript).toContain('text: lastNative || $("input").value');
   });
 
   it("wraps long pronunciation staves into visual lines", () => {

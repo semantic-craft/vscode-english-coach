@@ -13,8 +13,10 @@ describe("detectProtocol", () => {
     expect(detectProtocol("deepseek", "https://api.deepseek.com/anthropic")).toBe("anthropic");
     expect(detectProtocol("minimax", "https://api.minimaxi.com/anthropic")).toBe("anthropic");
   });
-  it("mimo /v1 token-plan endpoint -> openai", () => {
-    expect(detectProtocol("mimo", "https://token-plan-cn.xiaomimimo.com/v1")).toBe("openai");
+  it("keeps MiMo text generation on the Anthropic-compatible protocol", () => {
+    expect(detectProtocol("mimo", "https://token-plan-cn.xiaomimimo.com/v1")).toBe("anthropic");
+    expect(detectProtocol("mimo", "https://api.xiaomimimo.com/v1")).toBe("anthropic");
+    expect(detectProtocol("mimo", "https://token-plan-cn.xiaomimimo.com/anthropic")).toBe("anthropic");
   });
   it("routes Qwen Token Plan by base URL protocol", () => {
     expect(detectProtocol("qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1")).toBe("openai");
@@ -28,9 +30,11 @@ describe("detectProtocol", () => {
 
 describe("generateWithProvider (OpenAI protocol)", () => {
   it("posts to /chat/completions and returns content", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ choices: [{ message: { content: "hello" } }] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ choices: [{ message: { content: "hello" } }] }), { status: 200 }),
+      );
     const config: ProviderConfig = {
       id: "openai",
       title: "OpenAI",
@@ -48,9 +52,11 @@ describe("generateWithProvider (OpenAI protocol)", () => {
   });
 
   it("disables reasoning for GPT-5.5 chat completions", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ choices: [{ message: { content: "hello" } }] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ choices: [{ message: { content: "hello" } }] }), { status: 200 }),
+      );
     const config: ProviderConfig = {
       id: "openai",
       title: "OpenAI",
@@ -70,9 +76,11 @@ describe("generateWithProvider (OpenAI protocol)", () => {
   });
 
   it("enables medium reasoning for GPT-5.5 when requested", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ choices: [{ message: { content: "hello" } }] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ choices: [{ message: { content: "hello" } }] }), { status: 200 }),
+      );
     const config: ProviderConfig = {
       id: "openai",
       title: "OpenAI",
@@ -90,9 +98,9 @@ describe("generateWithProvider (OpenAI protocol)", () => {
   });
 
   it("normalizes optional JSON schema fields for OpenAI strict structured outputs", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 }));
     const config: ProviderConfig = {
       id: "openai",
       title: "OpenAI",
@@ -183,57 +191,61 @@ describe("generateWithProvider (OpenAI protocol)", () => {
     expect((init?.headers as Record<string, string>)["anthropic-version"]).toBe("2023-06-01");
   });
 
-  it("uses MiMo Token Plan headers, disables thinking, and falls back to JSON object mode", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 }),
-    );
+  it("uses MiMo Anthropic Token Plan headers, disables thinking, and embeds JSON constraints", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ content: [{ type: "text", text: "{}" }] }), { status: 200 }));
     const config: ProviderConfig = {
       id: "mimo",
       title: "Xiaomi MiMo",
       apiKey: "tp-test",
-      baseURL: "https://token-plan-cn.xiaomimimo.com/v1",
+      baseURL: "https://token-plan-cn.xiaomimimo.com/anthropic",
       model: "mimo-v2.5-pro",
-      apiProtocol: "openai",
+      apiProtocol: "anthropic",
     };
     await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256, {
       responseMimeType: "application/json",
       responseJsonSchema: { type: "object", properties: { ok: { type: "boolean" } } },
     });
-    const [, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0];
     const headers = init?.headers as Record<string, string>;
     const body = JSON.parse(String(init?.body));
+    expect(url).toBe("https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages");
     expect(headers.Authorization).toBe("Bearer tp-test");
     expect(headers["api-key"]).toBe("tp-test");
+    expect(headers["anthropic-version"]).toBe("2023-06-01");
     expect(body.thinking).toEqual({ type: "disabled" });
-    expect(body.response_format).toEqual({ type: "json_object" });
-    expect(body.messages[0].content).toContain("JSON schema");
+    expect(body.system).toContain("JSON schema");
+    expect(body.response_format).toBeUndefined();
   });
 
-  it("enables MiMo thinking when requested", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 }),
-    );
+  it("does not inject disabled MiMo thinking when requested", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ content: [{ type: "text", text: "{}" }] }), { status: 200 }));
     const config: ProviderConfig = {
       id: "mimo",
       title: "Xiaomi MiMo",
       apiKey: "tp-test",
-      baseURL: "https://token-plan-cn.xiaomimimo.com/v1",
+      baseURL: "https://token-plan-cn.xiaomimimo.com/anthropic",
       model: "mimo-v2.5-pro",
       reasoningMode: "on",
-      apiProtocol: "openai",
+      apiProtocol: "anthropic",
     };
     await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(String(init?.body));
-    expect(body.thinking).toEqual({ type: "enabled" });
+    expect(body.thinking).toBeUndefined();
   });
 });
 
 describe("generateWithProvider (Gemini protocol)", () => {
   it("uses Gemini JSON mime mode and embeds schema constraints in the prompt", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "{}" }] } }] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "{}" }] } }] }), { status: 200 }),
+      );
     const config: ProviderConfig = {
       id: "gemini",
       title: "Gemini",
@@ -256,9 +268,11 @@ describe("generateWithProvider (Gemini protocol)", () => {
   });
 
   it("uses medium thinking for Gemini 3.5 Flash when requested", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "{}" }] } }] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "{}" }] } }] }), { status: 200 }),
+      );
     const config: ProviderConfig = {
       id: "gemini",
       title: "Gemini",
@@ -275,9 +289,11 @@ describe("generateWithProvider (Gemini protocol)", () => {
   });
 
   it("keeps thinking enabled for Gemini Pro models (which require it)", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "{}" }] } }] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "{}" }] } }] }), { status: 200 }),
+      );
     const config: ProviderConfig = {
       id: "gemini",
       title: "Gemini",

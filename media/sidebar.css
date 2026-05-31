@@ -7,6 +7,9 @@ textarea { width: 100%; box-sizing: border-box; min-height: 76px; padding: 6px; 
 .actions { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
 button { padding: 4px 8px; cursor: pointer; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; }
 button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
+.primary-actions { flex-wrap: nowrap; }
+.primary-actions #coach { flex: 1 1 auto; }
+.icon-button { width: 28px; min-width: 28px; padding: 4px 0; text-align: center; }
 .watch { display: flex; gap: 6px; align-items: center; font-size: 11px; opacity: 0.9; margin-bottom: 8px; }
 hr { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 8px 0; }
 .section-title { font-weight: 600; margin: 4px 0; }

@@ -43,9 +43,12 @@ describe("buildNativeEnglishExpressionPrompt", () => {
   it("asks for native English expression rather than literal translation", () => {
     const { system, user } = buildNativeEnglishExpressionPrompt("我今天有点撑不住了", "natural");
     expect(user).toContain("我今天有点撑不住了");
-    expect(system).toContain("Do not translate word for word");
-    expect(system).toContain("English speech act");
-    expect(system).toContain("native English speaker");
+    expect(system).toContain("Treat the Chinese source as communicative intent");
+    expect(system).toContain("Do not write I want to say/tell/remind/ask");
+    expect(system).toContain("Do not weaken it to by end of day");
+    expect(system).toContain("Preserve person references");
+    expect(system).toContain("Do not add unsupported greetings");
+    expect(system).toContain("final English wording");
     expect(system).toContain("rewritten");
   });
 });

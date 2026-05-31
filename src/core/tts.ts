@@ -132,10 +132,7 @@ async function synthesizeWithQwen(
   const model = config.qwenModel === QWEN_TTS_INSTRUCT_MODEL ? QWEN_TTS_INSTRUCT_MODEL : QWEN_TTS_DEFAULT_MODEL;
   const voice = config.qwenVoice.trim() || QWEN_TTS_DEFAULT_VOICE;
   const languageType = config.qwenLanguageType.trim() || "Auto";
-  const instructions =
-    model === QWEN_TTS_INSTRUCT_MODEL
-      ? buildSpeechInstructions(config.qwenInstructions, slow)
-      : "";
+  const instructions = model === QWEN_TTS_INSTRUCT_MODEL ? buildSpeechInstructions(config.qwenInstructions, slow) : "";
 
   const response = await fetch(qwenGenerationUrl(config.qwenBaseURL), {
     method: "POST",
@@ -173,7 +170,7 @@ function synthesizeChunk(text: string, slow: boolean, config: TTSConfig, signal?
 async function synthesizeWithMimo(text: string, config: TTSConfig, signal?: AbortSignal): Promise<Buffer> {
   const apiKey = config.mimoApiKey.trim();
   if (!apiKey) throw new Error("Add a MiMo API key to use MiMo read-aloud.");
-  const base = (config.mimoBaseURL.trim() || MIMO_TTS_DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const base = resolveMimoTtsBaseURL(config.mimoBaseURL);
   const url = base.endsWith("/chat/completions") ? base : `${base}/chat/completions`;
   const response = await fetch(url, {
     method: "POST",
@@ -193,6 +190,33 @@ async function synthesizeWithMimo(text: string, config: TTSConfig, signal?: Abor
   const base64 = data.choices?.[0]?.message?.audio?.data;
   if (!base64) throw new Error("MiMo TTS returned no audio.");
   return Buffer.from(base64, "base64");
+}
+
+export function resolveMimoTtsBaseURL(baseURL: string): string {
+  const trimmed = (baseURL.trim() || MIMO_TTS_DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const lower = trimmed.toLowerCase();
+  if (lower.endsWith("/anthropic/v1/messages")) {
+    return `${trimmed.slice(0, -"/anthropic/v1/messages".length)}/v1`;
+  }
+  if (lower.endsWith("/anthropic/v1")) {
+    return `${trimmed.slice(0, -"/anthropic/v1".length)}/v1`;
+  }
+  if (lower.endsWith("/anthropic")) {
+    return `${trimmed.slice(0, -"/anthropic".length)}/v1`;
+  }
+  if (isMimoPayAsYouGoBaseURL(trimmed)) {
+    return MIMO_TTS_DEFAULT_BASE_URL;
+  }
+  return trimmed;
+}
+
+function isMimoPayAsYouGoBaseURL(baseURL: string): boolean {
+  try {
+    const host = new URL(baseURL).hostname.toLowerCase();
+    return host === "api.xiaomimimo.com" || host === "api.mimo-v2.com";
+  } catch {
+    return false;
+  }
 }
 
 async function synthesizeWithMinimax(text: string, config: TTSConfig, signal?: AbortSignal): Promise<Buffer> {

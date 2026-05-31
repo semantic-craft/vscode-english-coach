@@ -46,6 +46,7 @@ interface AnthropicCompatibleResponse {
 export interface GenerationOptions {
   responseMimeType?: string;
   responseJsonSchema?: Record<string, unknown>;
+  temperature?: number;
 }
 
 export async function translateWithProvider(config: ProviderConfig, request: TranslationRequest): Promise<string> {
@@ -99,7 +100,7 @@ async function generateWithGeminiProtocol(
   maxOutputTokens: number,
   options: GenerationOptions = {},
 ): Promise<string> {
-  const generationConfig: Record<string, unknown> = { temperature: 0.3, maxOutputTokens };
+  const generationConfig: Record<string, unknown> = { temperature: options.temperature ?? 0.3, maxOutputTokens };
   applyGeminiThinkingConfig(generationConfig, config.model, config.reasoningMode);
   const structuredPrompt = applyStructuredPromptOptions(prompt, options);
   applyGeminiResponseFormat(generationConfig, options);
@@ -147,7 +148,7 @@ async function generateWithAnthropicProtocol(
         system: structuredPrompt.system,
         messages: [{ role: "user", content: structuredPrompt.user }],
         max_tokens: maxOutputTokens,
-        temperature: 0.3,
+        temperature: options.temperature ?? 0.3,
         stream: false,
       },
       config,
@@ -181,10 +182,12 @@ async function generateWithOpenAIProtocol(
     ],
     stream: false,
   };
-  applyOpenAIGenerationParams(body, config.model, maxOutputTokens, 0.3, config.reasoningMode);
+  applyOpenAIGenerationParams(body, config.model, maxOutputTokens, options.temperature ?? 0.3, config.reasoningMode);
   applyOpenAIProviderQuirks(body, config);
   applyOpenAIResponseFormat(body, options, config.id);
-  const finalPrompt = needsPromptEmbeddedSchema(config, options) ? applyStructuredPromptOptions(prompt, options) : prompt;
+  const finalPrompt = needsPromptEmbeddedSchema(config, options)
+    ? applyStructuredPromptOptions(prompt, options)
+    : prompt;
   body.messages = [
     { role: "system", content: finalPrompt.system },
     { role: "user", content: finalPrompt.user },
@@ -412,7 +415,10 @@ function isReasoningModel(model: string): boolean {
 }
 
 function supportsNoReasoningEffort(model: string): boolean {
-  const match = model.trim().toLowerCase().match(/^gpt-5\.(\d+)/);
+  const match = model
+    .trim()
+    .toLowerCase()
+    .match(/^gpt-5\.(\d+)/);
   return match ? Number(match[1]) >= 1 : false;
 }
 
@@ -450,7 +456,11 @@ function applyOpenAIGenerationParams(
  * `json_object` mode only guarantees valid JSON, not adherence to the schema,
  * so we always prefer json_schema when a schema is supplied.
  */
-function applyOpenAIResponseFormat(body: Record<string, unknown>, options: GenerationOptions, providerId: ProviderId): void {
+function applyOpenAIResponseFormat(
+  body: Record<string, unknown>,
+  options: GenerationOptions,
+  providerId: ProviderId,
+): void {
   if (options.responseJsonSchema) {
     if (providerId === "mimo") {
       body.response_format = { type: "json_object" };
@@ -683,6 +693,7 @@ function isModelNotFoundError(message: string): boolean {
  * without a separate setting.
  */
 export function detectProtocol(id: ProviderId, baseURL: string): ProviderAPIProtocol {
+  if (id === "mimo") return "anthropic";
   const lower = baseURL.toLowerCase();
   if (lower.includes("/anthropic") || lower.includes("/coding")) return "anthropic";
   if (id === "gemini" || id === "openai" || id === "qwen") return "openai";

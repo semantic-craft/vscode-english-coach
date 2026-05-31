@@ -35,6 +35,8 @@ export const PROVIDER_TITLES: Record<ProviderId, string> = {
   openai: "OpenAI / ChatGPT",
 };
 
+const MIMO_ANALYSIS_BASE_URL = "https://token-plan-cn.xiaomimimo.com/anthropic";
+
 function cfg() {
   return vscode.workspace.getConfiguration("englishCoach");
 }
@@ -91,7 +93,8 @@ export async function getProviderConfig(
   tier: ModelTier = getModelTier(),
 ): Promise<ProviderConfig> {
   const c = cfg();
-  const baseURL = (c.get<string>(`${id}.baseURL`) ?? "").trim();
+  const configuredBaseURL = (c.get<string>(`${id}.baseURL`) ?? "").trim();
+  const baseURL = id === "mimo" ? resolveMimoAnalysisBaseURL(configuredBaseURL) : configuredBaseURL;
   const customModel = (c.get<string>(`${id}.model`) ?? "").trim();
   const apiKey = (await getSecret(context, id)) ?? "";
   const model = resolveModel(id, tier, customModel) || getProviderModelOptions(id)[0]?.id || customModel;
@@ -134,7 +137,7 @@ export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TT
     qwenBaseURL: c.get<string>("tts.qwenBaseURL") ?? "https://dashscope.aliyuncs.com/api/v1",
     qwenInstructions: c.get<string>("tts.qwenInstructions") ?? "",
     mimoApiKey: (await getSpeechSecret(context, "mimo")) || (await getSecret(context, "mimo")) || "",
-    mimoBaseURL: c.get<string>("mimo.baseURL") ?? "https://token-plan-cn.xiaomimimo.com/v1",
+    mimoBaseURL: c.get<string>("mimo.baseURL") ?? MIMO_ANALYSIS_BASE_URL,
     mimoModel: c.get<string>("tts.mimoModel") ?? "mimo-v2.5-tts",
     mimoVoice: c.get<string>("tts.mimoVoice") ?? "Chloe",
     minimaxApiKey: (await getSpeechSecret(context, "minimax")) || (await getSecret(context, "minimax")) || "",
@@ -146,6 +149,16 @@ export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TT
 
 function sirCfg() {
   return vscode.workspace.getConfiguration("sayItRight");
+}
+
+export function resolveMimoAnalysisBaseURL(baseURL?: string): string {
+  const configured = (baseURL ?? "").trim();
+  return isAnthropicCompatibleBaseURL(configured) ? configured : MIMO_ANALYSIS_BASE_URL;
+}
+
+function isAnthropicCompatibleBaseURL(baseURL: string): boolean {
+  const lower = baseURL.toLowerCase();
+  return lower.includes("/anthropic") || lower.endsWith("/v1/messages");
 }
 
 /**
@@ -182,7 +195,11 @@ export function getSayItRightAnalysisModel(provider: SayItRightProviderId): stri
 export function getSayItRightTtsModel(provider: SayItRightProviderId): string {
   const c = sirCfg();
   const overrideModel = (c.get<string>(`ttsModel.${provider}`) ?? "").trim();
-  return knownModelOrDefault(overrideModel, SAY_IT_RIGHT_TTS_MODELS[provider], DEFAULT_SAY_IT_RIGHT_TTS_MODELS[provider]);
+  return knownModelOrDefault(
+    overrideModel,
+    SAY_IT_RIGHT_TTS_MODELS[provider],
+    DEFAULT_SAY_IT_RIGHT_TTS_MODELS[provider],
+  );
 }
 
 function knownModelOrDefault(value: string, options: ModelEntry[], fallback: string): string {

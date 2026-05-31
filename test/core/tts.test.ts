@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { splitTextForQwen, wrapPCMInWAV, synthesize, TTSConfig } from "../../src/core/tts";
+import { splitTextForQwen, wrapPCMInWAV, synthesize, TTSConfig, resolveMimoTtsBaseURL } from "../../src/core/tts";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -56,9 +56,9 @@ describe("wrapPCMInWAV", () => {
 
 describe("synthesize", () => {
   it("Qwen teacher mode sends exact-text shadowing instructions to the instruct model", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ output: { audio: { data: "AQIDBA==" } } }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ output: { audio: { data: "AQIDBA==" } } }), { status: 200 }));
     const buffers = await synthesize(
       "Why does my Dropbox keep syncing the files?",
       ttsConfig({
@@ -80,12 +80,13 @@ describe("synthesize", () => {
   });
 
   it("Gemini teacher mode wraps the exact text in a speech prompt instead of a translation prompt", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { data: "AQIDBA==" } }] } }] }),
-        { status: 200 },
-      ),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { data: "AQIDBA==" } }] } }] }), {
+          status: 200,
+        }),
+      );
     const buffers = await synthesize(
       "Read VS Code aloud.",
       ttsConfig({ provider: "gemini", geminiApiKey: "k", geminiVoice: "Kore" }),
@@ -118,9 +119,11 @@ describe("synthesize", () => {
   });
 
   it("MiMo decodes base64 audio from the chat-completions response", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ choices: [{ message: { audio: { data: "AQIDBA==" } } }] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ choices: [{ message: { audio: { data: "AQIDBA==" } } }] }), { status: 200 }),
+      );
     const buffers = await synthesize(
       "hi",
       ttsConfig({ provider: "mimo", mimoApiKey: "k", mimoVoice: "Dean", mimoModel: "mimo-v2.5-tts" }),
@@ -138,10 +141,22 @@ describe("synthesize", () => {
     expect(body.audio).toEqual({ format: "wav", voice: "Dean" });
   });
 
-  it("MiniMax decodes hex audio from t2a_v2", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ base_resp: { status_code: 0 }, data: { audio: "01020304" } }), { status: 200 }),
+  it("maps MiMo Anthropic text bases to the Token Plan TTS /v1 endpoint", () => {
+    expect(resolveMimoTtsBaseURL("https://token-plan-cn.xiaomimimo.com/anthropic")).toBe(
+      "https://token-plan-cn.xiaomimimo.com/v1",
     );
+    expect(resolveMimoTtsBaseURL("https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages")).toBe(
+      "https://token-plan-cn.xiaomimimo.com/v1",
+    );
+    expect(resolveMimoTtsBaseURL("https://api.xiaomimimo.com/v1")).toBe("https://token-plan-cn.xiaomimimo.com/v1");
+  });
+
+  it("MiniMax decodes hex audio from t2a_v2", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ base_resp: { status_code: 0 }, data: { audio: "01020304" } }), { status: 200 }),
+      );
     const buffers = await synthesize(
       "hi",
       ttsConfig({

@@ -19,19 +19,22 @@ const $ = (id) => document.getElementById(id);
 
 const modeCopy = {
   coach: {
-    placeholder: "Type or paste your English here…",
-    resultTitle: "✨ Native version",
-    emptyResult: "Your idiomatic version will appear here.",
+    placeholder: "Type or paste English to polish…",
+    resultTitle: "✨ Polished English",
+    emptyResult: "Your polished English will appear here.",
+    action: "Polish English (⌘↵)",
   },
   express: {
-    placeholder: "输入中文意思，让模型用自然英文表达…",
+    placeholder: "输入中文意思；我会用真实地道的英文表达…",
     resultTitle: "✨ Native English",
     emptyResult: "Natural English phrasing will appear here.",
+    action: "Say It in English (⌘↵)",
   },
   translate: {
-    placeholder: "Type or paste text to translate…",
+    placeholder: "输入要翻译的文字…",
     resultTitle: "Translation",
     emptyResult: "Your translation will appear here.",
+    action: "Translate (⌘↵)",
   },
 };
 
@@ -58,6 +61,9 @@ function setMode(mode, persist = true) {
 }
 
 function applyState() {
+  if (!$("mode").querySelector(`option[value="${state.mode}"]`)) {
+    state.mode = state.mode === "coach" ? "coach" : "express";
+  }
   $("mode").value = state.mode;
   $("tone").value = state.tone;
   $("provider").value = state.providerId;
@@ -70,10 +76,8 @@ function applyState() {
   $("langRow").classList.toggle("hidden", !translate);
   $("whyWrap").classList.toggle("hidden", translate);
   updateDiffVisibility();
-  $("coach").textContent = translate ? "Translate (⌘↵)" : express ? "Say it in English (⌘↵)" : "Coach (⌘↵)";
-  $("expressAction").classList.toggle("hidden", express);
-  $("translateAction").classList.toggle("hidden", translate);
   const copy = modeCopy[state.mode] || modeCopy.coach;
+  $("coach").textContent = copy.action;
   $("input").placeholder = copy.placeholder;
   $("resultTitle").textContent = copy.resultTitle;
   if (!lastNative && $("native").classList.contains("muted")) {
@@ -103,7 +107,7 @@ function setLoading() {
   $("diff").textContent = "";
   updateDiffVisibility();
   $("native").textContent =
-    state.mode === "translate" ? "Translating…" : state.mode === "express" ? "Finding the native English phrasing…" : "Coaching…";
+    state.mode === "translate" ? "Translating…" : state.mode === "express" ? "Finding natural English…" : "Polishing…";
   $("native").className = "native muted";
   $("why").textContent = "";
   $("resultActions").classList.add("hidden");
@@ -278,11 +282,10 @@ window.addEventListener("message", (event) => {
   else if (msg.type === "error") showError(msg);
   else if (msg.type === "restore") {
     const e = msg.entry;
-    state.mode = e.kind === "translate" ? "translate" : e.kind === "express" ? "express" : "coach";
+    state.mode = e.kind === "express" || e.kind === "translate" ? "express" : "coach";
     setMode(state.mode);
     $("input").value = e.source;
-    if (state.mode === "translate") showResult({ mode: "translate", translation: e.output });
-    else if (state.mode === "express") showResult({ mode: "express", rewritten: e.output, why: e.why, source: e.source });
+    if (state.mode === "express") showResult({ mode: "express", rewritten: e.output, why: e.why, source: e.source });
     else showResult({ mode: "coach", rewritten: e.output, why: e.why, source: e.source });
   } else if (msg.type === "review") startReview(msg.cards);
   else if (msg.type === "setText") {
@@ -292,9 +295,7 @@ window.addEventListener("message", (event) => {
 
 document.addEventListener("DOMContentLoaded", () => {
   $("coach").onclick = () => run();
-  $("expressAction").onclick = () => run("express");
-  $("translateAction").onclick = () => run("translate");
-  $("pronunciation").onclick = () => send("practicePronunciation", { text: $("input").value || lastNative });
+  $("pronunciation").onclick = () => send("practicePronunciation", { text: lastNative || $("input").value });
   $("setKey").onclick = () => send("setApiKey", { providerId: state.providerId, kind: "chat" });
   $("copy").onclick = () => send("copy", { text: lastNative });
   $("input").addEventListener("keydown", (e) => {
