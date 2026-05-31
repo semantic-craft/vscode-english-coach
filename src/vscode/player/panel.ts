@@ -10,8 +10,11 @@ import { transcribeOpenAI } from "../../core/transcribe";
 import { buildFeedbackTip, compareWords } from "../../core/feedback";
 import { generateWithProvider } from "../../core/providers";
 import {
-  DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS,
-  DEFAULT_SAY_IT_RIGHT_TTS_MODELS,
+  buildPronunciationFeedbackPrompt,
+  buildSpeechInstructions,
+  PRONUNCIATION_FEEDBACK_SCHEMA,
+} from "../../core/prompt";
+import {
   DEFAULT_TTS_VOICES,
   SAY_IT_RIGHT_ANALYSIS_MODELS,
   SAY_IT_RIGHT_PROVIDER_IDS,
@@ -22,7 +25,9 @@ import {
 import {
   getAnalysisConfig,
   getProviderConfig,
+  getSayItRightAnalysisModel,
   getSayItRightProvider,
+  getSayItRightTtsModel,
   getTtsTarget,
   getTTSConfig,
   PROVIDER_TITLES,
@@ -41,6 +46,8 @@ interface PlayerMessage {
   teacher?: boolean;
   key?: ConfigKey;
   provider?: string;
+  providerId?: string;
+  kind?: string;
   value?: string;
   index?: number;
 }
@@ -126,9 +133,8 @@ export class SayItRightPanel {
 
   /** Stamp that invalidates cached analyses when the analysis provider/model changes. */
   private currentStamp(): string {
-    const c = vscode.workspace.getConfiguration("sayItRight");
     const provider = this.readAnalysisProvider();
-    const model = (c.get<string>(`analysisModel.${provider}`) ?? "").trim() || DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS[provider];
+    const model = getSayItRightAnalysisModel(provider);
     return `${provider}::${model}`;
   }
 
@@ -255,7 +261,10 @@ export class SayItRightPanel {
       case "setConfig":
         return this.handleConfigChange(m);
       case "setApiKey":
-        await vscode.commands.executeCommand("englishCoach.setApiKey");
+        await vscode.commands.executeCommand("englishCoach.setApiKey", {
+          providerId: typeof m.providerId === "string" ? m.providerId : this.readSpeechProvider(),
+          kind: typeof m.kind === "string" ? m.kind : "speech",
+        });
         return;
     }
   }
@@ -325,11 +334,8 @@ export class SayItRightPanel {
       selection: {
         analysisProvider,
         speechProvider,
-        analysisModel:
-          (c.get<string>(`analysisModel.${analysisProvider}`) ?? "").trim() ||
-          DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS[analysisProvider],
-        ttsModel:
-          (c.get<string>(`ttsModel.${speechProvider}`) ?? "").trim() || DEFAULT_SAY_IT_RIGHT_TTS_MODELS[speechProvider],
+        analysisModel: getSayItRightAnalysisModel(analysisProvider),
+        ttsModel: getSayItRightTtsModel(speechProvider),
         voice: (c.get<string>(`voice.${speechProvider}`) ?? "").trim() || DEFAULT_TTS_VOICES[speechProvider],
       },
     });
@@ -354,7 +360,8 @@ export class SayItRightPanel {
     if (!sentence) return;
     try {
       const target = await getTtsTarget(this.context);
-      const instructions = teacher ? target.teacherInstructions : "";
+      const rawInstructions = teacher ? target.teacherInstructions : "";
+      const effectiveInstructions = buildSpeechInstructions(rawInstructions, teacher);
       const actualTtsModel = target.provider === "qwen" && teacher ? target.ttsInstructModel : target.ttsModel;
       let bytes: Buffer;
       let ext: string;
@@ -364,14 +371,14 @@ export class SayItRightPanel {
           baseURL: target.baseURL,
           model: actualTtsModel,
           voice: target.voice,
-          instructions: instructions || undefined,
+          instructions: effectiveInstructions || undefined,
           speed: teacher ? 0.9 : 1.0,
           format: "mp3",
         });
         ext = "mp3";
       } else {
         const ttsConfig = await getTTSConfig(this.context);
-        const providerConfig = this.ttsConfigForTarget(ttsConfig, target, instructions, teacher);
+        const providerConfig = this.ttsConfigForTarget(ttsConfig, target, rawInstructions, teacher);
         const buffers = await synthesize(sentence, providerConfig, { slow: teacher });
         if (!buffers[0]) throw new Error("TTS returned no audio.");
         bytes = buffers[0];
@@ -382,7 +389,7 @@ export class SayItRightPanel {
         provider: target.provider,
         model: actualTtsModel,
         voice: target.voice,
-        instructions,
+        instructions: effectiveInstructions,
         format: ext,
       });
       const file = await cacheAudio(this.context, key, ext, bytes);
@@ -525,22 +532,22 @@ export class SayItRightPanel {
     try {
       const cfg = await getAnalysisConfig(this.context);
       if (!cfg.apiKey) return buildFeedbackTip(feedback);
+      const prompt = buildPronunciationFeedbackPrompt({
+        target: this.currentSentence,
+        transcript,
+        matched: feedback.matched,
+        total: feedback.total,
+        missed: feedback.missed,
+        extra: feedback.extra,
+      });
       const raw = await generateWithProvider(
         cfg,
-        {
-          system:
-            'You are a practical English pronunciation coach. Return only json: {"tip":"..."} with one concise Simplified Chinese coaching tip about stress, weak forms, rhythm, or intonation.',
-          user: [
-            `Target: ${this.currentSentence}`,
-            `Learner transcript: ${transcript}`,
-            `Matched: ${feedback.matched}/${feedback.total}`,
-            `Missed: ${feedback.missed.join(", ") || "none"}`,
-            `Extra: ${feedback.extra.join(", ") || "none"}`,
-          ].join("\n"),
-        },
+        prompt,
         20000,
         512,
-        { responseMimeType: "application/json" },
+        cfg.apiProtocol === "anthropic"
+          ? { responseMimeType: "application/json" }
+          : { responseMimeType: "application/json", responseJsonSchema: PRONUNCIATION_FEEDBACK_SCHEMA },
       );
       const parsed = JSON.parse(raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim()) as FeedbackTipJson;
       return parsed.tip?.trim() || buildFeedbackTip(feedback);

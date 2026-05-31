@@ -3,35 +3,107 @@ let state = {
   mode: "coach",
   tone: "natural",
   providerId: "",
+  reasoningMode: "off",
   targetLanguage: "auto",
 };
+let modelsByProvider = {};
+let selectedModels = {};
 let lastNative = "";
 let currentEntryId = null;
 let currentStarred = false;
 let reviewCards = [];
 let reviewIdx = 0;
+let currentDiffSuppressed = false;
 
 const $ = (id) => document.getElementById(id);
 
+const modeCopy = {
+  coach: {
+    placeholder: "Type or paste your English here…",
+    resultTitle: "✨ Native version",
+    emptyResult: "Your idiomatic version will appear here.",
+  },
+  express: {
+    placeholder: "输入中文意思，让模型用自然英文表达…",
+    resultTitle: "✨ Native English",
+    emptyResult: "Natural English phrasing will appear here.",
+  },
+  translate: {
+    placeholder: "Type or paste text to translate…",
+    resultTitle: "Translation",
+    emptyResult: "Your translation will appear here.",
+  },
+};
+
 function send(type, payload) {
   vscode.postMessage({ type, ...payload });
+}
+
+function hasCjk(text) {
+  return /[\u3400-\u9fff\uf900-\ufaff]/.test(text);
+}
+
+function updateDiffVisibility() {
+  const translate = state.mode === "translate";
+  const express = state.mode === "express";
+  $("diffWrap").classList.toggle("hidden", translate || express || currentDiffSuppressed);
+}
+
+function setMode(mode, persist = true) {
+  if (!modeCopy[mode]) return;
+  state.mode = mode;
+  currentDiffSuppressed = false;
+  applyState();
+  if (persist) send("setState", { key: "mode", value: state.mode });
 }
 
 function applyState() {
   $("mode").value = state.mode;
   $("tone").value = state.tone;
   $("provider").value = state.providerId;
+  $("reasoning").value = state.reasoningMode || "off";
   $("targetLanguage").value = state.targetLanguage;
+  renderModelOptions();
   const translate = state.mode === "translate";
+  const express = state.mode === "express";
   $("toneRow").classList.toggle("hidden", translate);
   $("langRow").classList.toggle("hidden", !translate);
   $("whyWrap").classList.toggle("hidden", translate);
-  $("diffWrap").classList.toggle("hidden", translate);
-  $("coach").textContent = translate ? "Translate (⌘↵)" : "Coach (⌘↵)";
+  updateDiffVisibility();
+  $("coach").textContent = translate ? "Translate (⌘↵)" : express ? "Say it in English (⌘↵)" : "Coach (⌘↵)";
+  $("expressAction").classList.toggle("hidden", express);
+  $("translateAction").classList.toggle("hidden", translate);
+  const copy = modeCopy[state.mode] || modeCopy.coach;
+  $("input").placeholder = copy.placeholder;
+  $("resultTitle").textContent = copy.resultTitle;
+  if (!lastNative && $("native").classList.contains("muted")) {
+    $("native").textContent = copy.emptyResult;
+  }
+}
+
+function renderModelOptions() {
+  const sel = $("model");
+  if (!sel) return;
+  const provider = state.providerId;
+  const options = modelsByProvider[provider] || [];
+  const requested = selectedModels[provider] || "";
+  const selected = options.some((model) => model.id === requested) ? requested : (options[0] && options[0].id) || "";
+  sel.innerHTML = "";
+  for (const model of options) {
+    const opt = document.createElement("option");
+    opt.value = model.id;
+    opt.textContent = model.title || model.id;
+    sel.appendChild(opt);
+  }
+  if (selected) sel.value = selected;
 }
 
 function setLoading() {
-  $("native").textContent = state.mode === "translate" ? "Translating…" : "Coaching…";
+  currentDiffSuppressed = state.mode !== "coach" || hasCjk($("input").value);
+  $("diff").textContent = "";
+  updateDiffVisibility();
+  $("native").textContent =
+    state.mode === "translate" ? "Translating…" : state.mode === "express" ? "Finding the native English phrasing…" : "Coaching…";
   $("native").className = "native muted";
   $("why").textContent = "";
   $("resultActions").classList.add("hidden");
@@ -83,6 +155,7 @@ function showResult(msg) {
   currentEntryId = msg.entryId || null;
   currentStarred = false;
   if (msg.mode === "translate") {
+    currentDiffSuppressed = true;
     lastNative = msg.translation || "";
     $("native").textContent = lastNative;
     $("native").className = "native";
@@ -93,8 +166,11 @@ function showResult(msg) {
     $("native").textContent = lastNative;
     $("native").className = "native";
     $("why").textContent = msg.why || "";
-    renderDiff(msg.source || "", lastNative);
+    currentDiffSuppressed = msg.mode === "express" || hasCjk(msg.source || "");
+    if (currentDiffSuppressed) $("diff").textContent = "";
+    else renderDiff(msg.source || "", lastNative);
   }
+  updateDiffVisibility();
   $("resultActions").classList.toggle("hidden", !lastNative);
   updateStar();
 }
@@ -159,13 +235,20 @@ function showError(msg) {
   }
 }
 
-function run() {
+function run(modeOverride) {
   const text = $("input").value;
+  if (modeOverride && modeCopy[modeOverride] && modeOverride !== state.mode) {
+    setMode(modeOverride);
+  }
   if (!text.trim()) return;
+  const model = selectedModels[state.providerId] || $("model").value;
+  const reasoningMode = state.reasoningMode || "off";
   if (state.mode === "translate") {
-    send("translate", { text, targetLang: state.targetLanguage, providerId: state.providerId });
+    send("translate", { text, targetLang: state.targetLanguage, providerId: state.providerId, model, reasoningMode });
+  } else if (state.mode === "express") {
+    send("express", { text, tone: state.tone, providerId: state.providerId, model, reasoningMode });
   } else {
-    send("coach", { text, tone: state.tone, providerId: state.providerId });
+    send("coach", { text, tone: state.tone, providerId: state.providerId, model, reasoningMode });
   }
 }
 
@@ -173,6 +256,8 @@ window.addEventListener("message", (event) => {
   const msg = event.data;
   if (msg.type === "init") {
     state = msg.state;
+    modelsByProvider = msg.models || {};
+    selectedModels = msg.selectedModels || {};
     const sel = $("provider");
     sel.innerHTML = "";
     for (const p of msg.providers) {
@@ -181,18 +266,23 @@ window.addEventListener("message", (event) => {
       opt.textContent = p.title;
       sel.appendChild(opt);
     }
-    if (!state.providerId && msg.providers[0]) state.providerId = msg.providers[0].id;
+    if ((!state.providerId || !msg.providers.some((p) => p.id === state.providerId)) && msg.providers[0]) {
+      state.providerId = msg.providers[0].id;
+    }
+    state.reasoningMode = state.reasoningMode || "off";
+    const providerModels = modelsByProvider[state.providerId] || [];
+    if (!selectedModels[state.providerId] && providerModels[0]) selectedModels[state.providerId] = providerModels[0].id;
     applyState();
   } else if (msg.type === "loading") setLoading();
   else if (msg.type === "result") showResult(msg);
   else if (msg.type === "error") showError(msg);
   else if (msg.type === "restore") {
     const e = msg.entry;
-    state.mode = e.kind === "translate" ? "translate" : "coach";
-    applyState();
-    send("setState", { key: "mode", value: state.mode });
+    state.mode = e.kind === "translate" ? "translate" : e.kind === "express" ? "express" : "coach";
+    setMode(state.mode);
     $("input").value = e.source;
     if (state.mode === "translate") showResult({ mode: "translate", translation: e.output });
+    else if (state.mode === "express") showResult({ mode: "express", rewritten: e.output, why: e.why, source: e.source });
     else showResult({ mode: "coach", rewritten: e.output, why: e.why, source: e.source });
   } else if (msg.type === "review") startReview(msg.cards);
   else if (msg.type === "setText") {
@@ -201,25 +291,36 @@ window.addEventListener("message", (event) => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  $("coach").onclick = run;
+  $("coach").onclick = () => run();
+  $("expressAction").onclick = () => run("express");
+  $("translateAction").onclick = () => run("translate");
   $("pronunciation").onclick = () => send("practicePronunciation", { text: $("input").value || lastNative });
-  $("setKey").onclick = () => send("setApiKey", {});
+  $("setKey").onclick = () => send("setApiKey", { providerId: state.providerId, kind: "chat" });
   $("copy").onclick = () => send("copy", { text: lastNative });
   $("input").addEventListener("keydown", (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
   });
   $("mode").onchange = (e) => {
-    state.mode = e.target.value;
-    applyState();
-    send("setState", { key: "mode", value: state.mode });
+    setMode(e.target.value);
   };
   $("tone").onchange = (e) => {
     state.tone = e.target.value;
     send("setState", { key: "tone", value: state.tone });
   };
+  $("reasoning").onchange = (e) => {
+    state.reasoningMode = e.target.value;
+    send("setReasoningMode", { reasoningMode: state.reasoningMode });
+  };
   $("provider").onchange = (e) => {
     state.providerId = e.target.value;
+    const providerModels = modelsByProvider[state.providerId] || [];
+    if (!selectedModels[state.providerId] && providerModels[0]) selectedModels[state.providerId] = providerModels[0].id;
     send("setState", { key: "providerId", value: state.providerId });
+    renderModelOptions();
+  };
+  $("model").onchange = (e) => {
+    selectedModels[state.providerId] = e.target.value;
+    send("setModel", { providerId: state.providerId, model: selectedModels[state.providerId] });
   };
   $("targetLanguage").onchange = (e) => {
     state.targetLanguage = e.target.value;

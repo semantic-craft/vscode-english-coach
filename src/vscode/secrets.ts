@@ -6,7 +6,7 @@ export type SecretKeyId = ProviderId;
 const SECRET_PREFIX = "englishCoach.secret.";
 
 const SECRET_LABELS: Record<SecretKeyId, string> = {
-  qwen: "Qwen / DashScope",
+  qwen: "Qwen",
   minimax: "MiniMax",
   deepseek: "DeepSeek",
   mimo: "Xiaomi MiMo",
@@ -14,10 +14,27 @@ const SECRET_LABELS: Record<SecretKeyId, string> = {
   openai: "OpenAI / ChatGPT",
 };
 
-// "chat" = the analysis/translation key (the default, historical slot). "speech" = an optional
-// separate key for TTS, so the speech engine can authenticate against a different endpoint/account
-// than the analysis engine (e.g. a token-plan key for analysis, a regular key for speech).
-type KeyKind = "chat" | "speech";
+// "chat" = the analysis/translation key (the default, historical slot). "speech" = the TTS key.
+// Qwen keeps these separate: Token Plan keys drive Coach/analysis, while DashScope keys drive TTS.
+export type KeyKind = "chat" | "speech";
+
+export interface ApiKeyPreset {
+  providerId?: string;
+  kind?: string;
+}
+
+interface ProviderPick {
+  label: string;
+  description?: string;
+  detail?: string;
+  id: SecretKeyId;
+}
+
+interface KindPick {
+  label: string;
+  detail: string;
+  keyKind: KeyKind;
+}
 
 function secretStorageKey(id: SecretKeyId, kind: KeyKind): string {
   return kind === "speech" ? `${SECRET_PREFIX}speech.${id}` : `${SECRET_PREFIX}${id}`;
@@ -31,24 +48,74 @@ export function getSpeechSecret(context: vscode.ExtensionContext, id: SecretKeyI
   return context.secrets.get(secretStorageKey(id, "speech"));
 }
 
-export async function setApiKeyInteractive(context: vscode.ExtensionContext): Promise<void> {
+function isSecretKeyId(value: unknown): value is SecretKeyId {
+  return typeof value === "string" && (PROVIDER_IDS as readonly string[]).includes(value);
+}
+
+function isKeyKind(value: unknown): value is KeyKind {
+  return value === "chat" || value === "speech";
+}
+
+function providerPick(id: SecretKeyId): ProviderPick {
+  return {
+    label: SECRET_LABELS[id],
+    description: id === "qwen" ? "Token Plan + DashScope" : undefined,
+    detail: id === "qwen" ? "Coach/analysis uses Token Plan; Qwen read-aloud uses a separate DashScope key." : undefined,
+    id,
+  };
+}
+
+function keyKindOptions(id: SecretKeyId): KindPick[] {
+  if (id === "qwen") {
+    return [
+      {
+        label: "Coach / Analysis key (Token Plan)",
+        detail: "Used for Coach, Translate, Native English, and pronunciation analysis.",
+        keyKind: "chat",
+      },
+      {
+        label: "Speech / TTS key (DashScope)",
+        detail: "Required for Qwen read-aloud; it does not fall back to the Token Plan key.",
+        keyKind: "speech",
+      },
+    ];
+  }
+  return [
+    { label: "Analysis / Chat key", detail: "Used for pronunciation analysis and the Coach", keyKind: "chat" },
+    {
+      label: "Speech / TTS key",
+      detail: "Optional separate key for read-aloud; falls back to the analysis key when supported.",
+      keyKind: "speech",
+    },
+  ];
+}
+
+function keyUseLabel(id: SecretKeyId, kind: KeyKind): string {
+  if (id === "qwen" && kind === "chat") return "Coach/Analysis (Token Plan)";
+  if (id === "qwen" && kind === "speech") return "Speech/TTS (DashScope)";
+  return kind === "speech" ? "Speech/TTS" : "Analysis/Chat";
+}
+
+export async function setApiKeyInteractive(context: vscode.ExtensionContext, preset?: ApiKeyPreset): Promise<void> {
   const ids: SecretKeyId[] = [...PROVIDER_IDS];
-  const provider = await vscode.window.showQuickPick(
-    ids.map((id) => ({ label: SECRET_LABELS[id], id })),
-    { placeHolder: "Which provider's API key do you want to set?" },
-  );
+  const presetProviderId = isSecretKeyId(preset?.providerId) ? preset.providerId : undefined;
+  const provider =
+    presetProviderId !== undefined
+      ? providerPick(presetProviderId)
+      : await vscode.window.showQuickPick(ids.map(providerPick), {
+          placeHolder: "Which provider's API key do you want to set?",
+        });
   if (!provider) return;
 
-  const kindPick = await vscode.window.showQuickPick(
-    [
-      { label: "Analysis / Chat key", detail: "Used for pronunciation analysis and the Coach", keyKind: "chat" as KeyKind },
-      { label: "Speech / TTS key", detail: "Optional separate key for read-aloud (falls back to the analysis key)", keyKind: "speech" as KeyKind },
-    ],
-    { placeHolder: `Set which ${provider.label} key?` },
-  );
+  const options = keyKindOptions(provider.id);
+  const presetKind = isKeyKind(preset?.kind) ? preset.kind : undefined;
+  const kindPick =
+    presetKind !== undefined
+      ? options.find((option) => option.keyKind === presetKind)
+      : await vscode.window.showQuickPick(options, { placeHolder: `Set which ${provider.label} key?` });
   if (!kindPick) return;
 
-  const useLabel = kindPick.keyKind === "speech" ? "Speech/TTS" : "Analysis/Chat";
+  const useLabel = keyUseLabel(provider.id, kindPick.keyKind);
   const value = await vscode.window.showInputBox({
     prompt: `Enter your ${provider.label} ${useLabel} API key`,
     password: true,

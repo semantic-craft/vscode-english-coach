@@ -3,13 +3,17 @@ import {
   DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS,
   DEFAULT_SAY_IT_RIGHT_TTS_MODELS,
   DEFAULT_TTS_VOICES,
+  ModelEntry,
+  SAY_IT_RIGHT_ANALYSIS_MODELS,
   SAY_IT_RIGHT_PROVIDER_IDS,
+  SAY_IT_RIGHT_TTS_MODELS,
   SayItRightProviderId,
+  getProviderModelOptions,
   resolveModel,
 } from "../core/models";
 import { detectProtocol } from "../core/providers";
 import { TTSConfig } from "../core/tts";
-import { ModelTier, PROVIDER_IDS, ProviderConfig, ProviderId } from "../core/types";
+import { ModelTier, PROVIDER_IDS, ProviderConfig, ProviderId, ReasoningMode } from "../core/types";
 import { getSecret, getSpeechSecret } from "./secrets";
 
 export interface TtsTarget {
@@ -23,7 +27,7 @@ export interface TtsTarget {
 }
 
 export const PROVIDER_TITLES: Record<ProviderId, string> = {
-  qwen: "Qwen (DashScope)",
+  qwen: "Qwen (Token Plan)",
   minimax: "MiniMax",
   deepseek: "DeepSeek",
   mimo: "Xiaomi MiMo",
@@ -62,8 +66,13 @@ export function defaultProviderId(): ProviderId {
 }
 
 export function getModelTier(): ModelTier {
-  const value = cfg().get<string>("modelTier") ?? "pro";
-  return value === "fast" || value === "pro" || value === "custom" ? value : "pro";
+  const value = cfg().get<string>("modelTier") ?? "custom";
+  return value === "fast" || value === "pro" || value === "custom" ? value : "custom";
+}
+
+export function getReasoningMode(): ReasoningMode {
+  const value = cfg().get<string>("reasoningMode") ?? "off";
+  return value === "on" || value === "auto" ? value : "off";
 }
 
 export function getTimeoutMs(): number {
@@ -85,14 +94,28 @@ export async function getProviderConfig(
   const baseURL = (c.get<string>(`${id}.baseURL`) ?? "").trim();
   const customModel = (c.get<string>(`${id}.model`) ?? "").trim();
   const apiKey = (await getSecret(context, id)) ?? "";
+  const model = resolveModel(id, tier, customModel) || getProviderModelOptions(id)[0]?.id || customModel;
   return {
     id,
     title: PROVIDER_TITLES[id],
     apiKey,
     baseURL,
-    model: resolveModel(id, tier, customModel),
+    model,
+    reasoningMode: getReasoningMode(),
     apiProtocol: detectProtocol(id, baseURL),
   };
+}
+
+export function getCoachModelOptions(ids: ProviderId[]): Record<ProviderId, ModelEntry[]> {
+  return Object.fromEntries(ids.map((id) => [id, getProviderModelOptions(id)])) as Record<ProviderId, ModelEntry[]>;
+}
+
+export function getCoachModelSelection(id: ProviderId): string {
+  const c = cfg();
+  const customModel = (c.get<string>(`${id}.model`) ?? "").trim();
+  const options = getProviderModelOptions(id);
+  const resolved = resolveModel(id, getModelTier(), customModel);
+  return knownModelOrDefault(resolved, options, options[0]?.id || "");
 }
 
 export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TTSConfig> {
@@ -104,7 +127,7 @@ export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TT
     geminiApiKey: (await getSpeechSecret(context, "gemini")) || (await getSecret(context, "gemini")) || "",
     geminiModel: c.get<string>("tts.geminiModel") ?? "gemini-3.1-flash-tts-preview",
     geminiVoice: c.get<string>("tts.geminiVoice") ?? "Charon",
-    dashscopeApiKey: (await getSpeechSecret(context, "qwen")) || (await getSecret(context, "qwen")) || "",
+    dashscopeApiKey: (await getSpeechSecret(context, "qwen")) || "",
     qwenModel: c.get<string>("tts.qwenModel") ?? "qwen3-tts-flash",
     qwenVoice: c.get<string>("tts.qwenVoice") ?? "Jennifer",
     qwenLanguageType: c.get<string>("tts.qwenLanguageType") ?? "Auto",
@@ -141,25 +164,42 @@ export function getSayItRightProvider(role: "analysis" | "speech"): SayItRightPr
 }
 
 export async function getAnalysisConfig(context: vscode.ExtensionContext): Promise<ProviderConfig> {
-  const c = sirCfg();
   const provider = getSayItRightProvider("analysis");
   const base = await getProviderConfig(context, provider);
+  return { ...base, model: getSayItRightAnalysisModel(provider) || base.model };
+}
+
+export function getSayItRightAnalysisModel(provider: SayItRightProviderId): string {
+  const c = sirCfg();
   const overrideModel = (c.get<string>(`analysisModel.${provider}`) ?? "").trim();
-  return { ...base, model: overrideModel || DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS[provider] || base.model };
+  return knownModelOrDefault(
+    overrideModel,
+    SAY_IT_RIGHT_ANALYSIS_MODELS[provider],
+    DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS[provider],
+  );
+}
+
+export function getSayItRightTtsModel(provider: SayItRightProviderId): string {
+  const c = sirCfg();
+  const overrideModel = (c.get<string>(`ttsModel.${provider}`) ?? "").trim();
+  return knownModelOrDefault(overrideModel, SAY_IT_RIGHT_TTS_MODELS[provider], DEFAULT_SAY_IT_RIGHT_TTS_MODELS[provider]);
+}
+
+function knownModelOrDefault(value: string, options: ModelEntry[], fallback: string): string {
+  return options.some((option) => option.id === value) ? value : fallback;
 }
 
 export async function getTtsTarget(context: vscode.ExtensionContext): Promise<TtsTarget> {
   const c = sirCfg();
   const provider = getSayItRightProvider("speech");
   const base = await getProviderConfig(context, provider);
-  // Speech can use its own API key (falls back to the provider's main key), so e.g. analysis runs on
-  // a token-plan key while speech runs on the regular endpoint with a regular key.
-  const apiKey = (await getSpeechSecret(context, provider)) || base.apiKey;
+  // Qwen speech is DashScope-only in this extension and must not reuse the Token Plan analysis key.
+  const apiKey = (await getSpeechSecret(context, provider)) || (provider === "qwen" ? "" : base.apiKey);
   return {
     provider,
     voice: (c.get<string>(`voice.${provider}`) ?? "").trim() || DEFAULT_TTS_VOICES[provider],
     teacherInstructions: (c.get<string>("teacherInstructions") ?? "").trim(),
-    ttsModel: (c.get<string>(`ttsModel.${provider}`) ?? "").trim() || DEFAULT_SAY_IT_RIGHT_TTS_MODELS[provider],
+    ttsModel: getSayItRightTtsModel(provider),
     ttsInstructModel: (c.get<string>("ttsInstructModel.qwen") ?? "").trim() || "qwen3-tts-instruct-flash",
     baseURL: base.baseURL,
     apiKey,

@@ -42,7 +42,12 @@ select { max-width: min(280px, 100%); background: var(--vscode-dropdown-backgrou
 }
 .sentence-head { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; }
 .snum { font-weight: 800; color: var(--vscode-foreground); min-width: 1.4rem; }
-.stext { color: var(--vscode-descriptionForeground); font-size: 0.92rem; }
+.stext {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.92rem;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
 .sentence.active .stext { color: var(--vscode-foreground); }
 .sentence-body { display: flex; flex-direction: column; gap: 8px; min-height: 1.4rem; color: var(--vscode-descriptionForeground); }
 .sentence-ipa { font-family: var(--vscode-editor-font-family); color: var(--vscode-descriptionForeground); font-size: 0.8rem; margin-top: 4px; }
@@ -56,12 +61,15 @@ select { max-width: min(280px, 100%); background: var(--vscode-dropdown-backgrou
   background: var(--vscode-editor-background);
   background: color-mix(in srgb, var(--vscode-editor-background) 90%, var(--vscode-foreground) 10%);
 }
+.group-continued { margin-top: -2px; }
 .group-head {
   min-width: var(--group-width);
   display: flex;
   justify-content: flex-end;
   margin-bottom: 2px;
+  min-height: 1.35rem;
 }
+.tone-spacer { display: block; min-height: 1.35rem; }
 .tone-badge {
   display: inline-flex;
   align-items: center;
@@ -140,6 +148,7 @@ select { max-width: min(280px, 100%); background: var(--vscode-dropdown-backgrou
   padding: 0 1px;
 }
 .syl.stress > .syl-text { font-weight: 800; }
+.word.long-word .syl-text { font-size: 1.08rem; }
 .word.active .syl-row {
   background: var(--vscode-editor-selectionBackground);
   box-shadow: 0 0 0 1px var(--vscode-focusBorder, transparent);
@@ -161,6 +170,7 @@ select { max-width: min(280px, 100%); background: var(--vscode-dropdown-backgrou
   font-size: 1.38rem;
   font-weight: 800;
 }
+.word.nuclear.long-word .syl-text { font-size: 1.24rem; }
 .word.nuclear .syl-row {
   border-bottom: 2px solid var(--vscode-charts-red, #ff6b8b);
   padding-bottom: 1px;

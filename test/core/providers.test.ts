@@ -16,8 +16,10 @@ describe("detectProtocol", () => {
   it("mimo /v1 token-plan endpoint -> openai", () => {
     expect(detectProtocol("mimo", "https://token-plan-cn.xiaomimimo.com/v1")).toBe("openai");
   });
-  it("qwen is always openai (DashScope compatible-mode)", () => {
+  it("routes Qwen Token Plan by base URL protocol", () => {
     expect(detectProtocol("qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1")).toBe("openai");
+    expect(detectProtocol("qwen", "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1")).toBe("openai");
+    expect(detectProtocol("qwen", "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic")).toBe("anthropic");
   });
   it("falls back to anthropic", () => {
     expect(detectProtocol("mimo", "https://example.com/foo")).toBe("anthropic");
@@ -34,7 +36,7 @@ describe("generateWithProvider (OpenAI protocol)", () => {
       title: "OpenAI",
       apiKey: "sk-test",
       baseURL: "https://api.openai.com/v1",
-      model: "gpt-4.1-mini",
+      model: "openai-chat-test-model",
       apiProtocol: "openai",
     };
     const out = await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);
@@ -43,6 +45,142 @@ describe("generateWithProvider (OpenAI protocol)", () => {
       "https://api.openai.com/v1/chat/completions",
       expect.objectContaining({ method: "POST" }),
     );
+  });
+
+  it("disables reasoning for GPT-5.5 chat completions", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: "hello" } }] }), { status: 200 }),
+    );
+    const config: ProviderConfig = {
+      id: "openai",
+      title: "OpenAI",
+      apiKey: "sk-test",
+      baseURL: "https://api.openai.com/v1",
+      model: "gpt-5.5",
+      apiProtocol: "openai",
+    };
+    const out = await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(out).toBe("hello");
+    expect(body.max_completion_tokens).toBe(256);
+    expect(body.reasoning_effort).toBe("none");
+    expect(body.max_tokens).toBeUndefined();
+    expect(body.temperature).toBeUndefined();
+  });
+
+  it("enables medium reasoning for GPT-5.5 when requested", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: "hello" } }] }), { status: 200 }),
+    );
+    const config: ProviderConfig = {
+      id: "openai",
+      title: "OpenAI",
+      apiKey: "sk-test",
+      baseURL: "https://api.openai.com/v1",
+      model: "gpt-5.5",
+      reasoningMode: "on",
+      apiProtocol: "openai",
+    };
+    await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body.reasoning_effort).toBe("medium");
+    expect(body.max_completion_tokens).toBe(256);
+  });
+
+  it("normalizes optional JSON schema fields for OpenAI strict structured outputs", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 }),
+    );
+    const config: ProviderConfig = {
+      id: "openai",
+      title: "OpenAI",
+      apiKey: "sk-test",
+      baseURL: "https://api.openai.com/v1",
+      model: "gpt-5.5",
+      apiProtocol: "openai",
+    };
+    await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256, {
+      responseMimeType: "application/json",
+      responseJsonSchema: {
+        type: "object",
+        required: ["text"],
+        propertyOrdering: ["text", "maybe", "words"],
+        properties: {
+          text: { type: "string" },
+          maybe: { type: "string" },
+          words: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["text"],
+              properties: {
+                text: { type: "string" },
+                ipa: { type: "string" },
+                linkToNext: { type: ["string", "null"], enum: ["liaison", null] },
+              },
+            },
+          },
+        },
+      },
+    });
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    const schema = body.response_format.json_schema.schema;
+    expect(schema.propertyOrdering).toBeUndefined();
+    expect(schema.required).toEqual(["text", "maybe", "words"]);
+    expect(schema.additionalProperties).toBe(false);
+    expect(schema.properties.maybe.type).toEqual(["string", "null"]);
+    expect(schema.properties.words.items.required).toEqual(["text", "ipa", "linkToNext"]);
+    expect(schema.properties.words.items.additionalProperties).toBe(false);
+    expect(schema.properties.words.items.properties.ipa.type).toEqual(["string", "null"]);
+    expect(schema.properties.words.items.properties.linkToNext.type).toEqual(["string", "null"]);
+    expect(schema.properties.words.items.properties.linkToNext.enum).toEqual(["liaison", null]);
+  });
+
+  it("maps the thinking toggle to OpenAI-compatible Qwen enable_thinking", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+      return new Response(JSON.stringify({ choices: [{ message: { content: "hello" } }] }), { status: 200 });
+    });
+    const config: ProviderConfig = {
+      id: "qwen",
+      title: "Qwen",
+      apiKey: "qwen-test",
+      baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      model: "qwen3.6-flash",
+      apiProtocol: "openai",
+    };
+    await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);
+    let body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.enable_thinking).toBe(false);
+
+    fetchMock.mockClear();
+    await generateWithProvider({ ...config, reasoningMode: "on" }, { system: "s", user: "u" }, 5000, 256);
+    body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.enable_thinking).toBe(true);
+  });
+
+  it("uses Anthropic-compatible Qwen Token Plan when the base URL requests it", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+      return new Response(JSON.stringify({ content: [{ type: "text", text: "hello" }] }), { status: 200 });
+    });
+    const config: ProviderConfig = {
+      id: "qwen",
+      title: "Qwen",
+      apiKey: "qwen-test",
+      baseURL: "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+      model: "qwen3.6-flash",
+      apiProtocol: "anthropic",
+      reasoningMode: "off",
+    };
+    const out = await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);
+    const [url, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(out).toBe("hello");
+    expect(url).toBe("https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic/v1/messages");
+    expect(body.thinking).toEqual({ type: "disabled" });
+    expect((init?.headers as Record<string, string>)["anthropic-version"]).toBe("2023-06-01");
   });
 
   it("uses MiMo Token Plan headers, disables thinking, and falls back to JSON object mode", async () => {
@@ -70,6 +208,25 @@ describe("generateWithProvider (OpenAI protocol)", () => {
     expect(body.response_format).toEqual({ type: "json_object" });
     expect(body.messages[0].content).toContain("JSON schema");
   });
+
+  it("enables MiMo thinking when requested", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), { status: 200 }),
+    );
+    const config: ProviderConfig = {
+      id: "mimo",
+      title: "Xiaomi MiMo",
+      apiKey: "tp-test",
+      baseURL: "https://token-plan-cn.xiaomimimo.com/v1",
+      model: "mimo-v2.5-pro",
+      reasoningMode: "on",
+      apiProtocol: "openai",
+    };
+    await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body.thinking).toEqual({ type: "enabled" });
+  });
 });
 
 describe("generateWithProvider (Gemini protocol)", () => {
@@ -93,9 +250,28 @@ describe("generateWithProvider (Gemini protocol)", () => {
     const body = JSON.parse(String(init?.body));
     expect(body.generationConfig.responseMimeType).toBe("application/json");
     expect(body.generationConfig.responseFormat).toBeUndefined();
-    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 0 });
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "minimal" });
     expect(body.system_instruction.parts[0].text).toContain("Structured output requirements");
     expect(body.system_instruction.parts[0].text).toContain("JSON schema");
+  });
+
+  it("uses medium thinking for Gemini 3.5 Flash when requested", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "{}" }] } }] }), { status: 200 }),
+    );
+    const config: ProviderConfig = {
+      id: "gemini",
+      title: "Gemini",
+      apiKey: "gem-test",
+      baseURL: "https://generativelanguage.googleapis.com/v1beta",
+      model: "gemini-3.5-flash",
+      reasoningMode: "on",
+      apiProtocol: "openai",
+    };
+    await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "medium" });
   });
 
   it("keeps thinking enabled for Gemini Pro models (which require it)", async () => {
@@ -114,5 +290,29 @@ describe("generateWithProvider (Gemini protocol)", () => {
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(String(init?.body));
     expect(body.generationConfig.thinkingConfig).toBeUndefined();
+  });
+});
+
+describe("generateWithProvider (Anthropic protocol)", () => {
+  it("disables thinking by default and lets provider-native thinking run when requested", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+      return new Response(JSON.stringify({ content: [{ type: "text", text: "hello" }] }), { status: 200 });
+    });
+    const config: ProviderConfig = {
+      id: "minimax",
+      title: "MiniMax",
+      apiKey: "mini-test",
+      baseURL: "https://api.minimaxi.com/anthropic",
+      model: "MiniMax-M2.7-highspeed",
+      apiProtocol: "anthropic",
+    };
+    await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);
+    let body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.thinking).toEqual({ type: "disabled" });
+
+    fetchMock.mockClear();
+    await generateWithProvider({ ...config, reasoningMode: "on" }, { system: "s", user: "u" }, 5000, 256);
+    body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.thinking).toBeUndefined();
   });
 });

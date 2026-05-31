@@ -8,6 +8,8 @@ export type PromptProfile = "general" | "technical" | "academic" | "legal" | "su
 
 export type ModelTier = "fast" | "pro" | "custom";
 
+export type ReasoningMode = "off" | "on" | "auto";
+
 export type RewriteTone = "natural" | "casual" | "formal" | "concise";
 
 export type ProviderAPIProtocol = "openai" | "anthropic";
@@ -28,6 +30,7 @@ export interface ProviderConfig {
   apiKey: string;
   baseURL: string;
   model: string;
+  reasoningMode?: ReasoningMode;
   apiProtocol?: ProviderAPIProtocol;
 }
 

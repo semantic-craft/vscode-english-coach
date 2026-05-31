@@ -1,5 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { buildRewriteCoachPrompt } from "../../src/core/prompt";
+import {
+  buildGeminiSpeechPrompt,
+  buildNativeEnglishExpressionPrompt,
+  buildPronunciationFeedbackPrompt,
+  buildRewriteCoachPrompt,
+  buildTeacherSpeechInstructions,
+  buildTranslationPrompt,
+} from "../../src/core/prompt";
+
+describe("buildTranslationPrompt", () => {
+  it("uses a meaning-first native-expression translation flow", () => {
+    const { system, user } = buildTranslationPrompt({
+      text: "我今天有点撑不住了",
+      targetLanguage: "en",
+      targetLanguageTitle: "English",
+      style: "polished",
+      promptProfile: "general",
+      timeoutMs: 1000,
+      maxOutputTokens: 512,
+    });
+    expect(system).toContain("internally infer the speaker's intent");
+    expect(system).toContain("native speaker would naturally express");
+    expect(system).toContain("not as isolated dictionary entries");
+    expect(system).toContain("Return only the translation");
+    expect(user).toContain("我今天有点撑不住了");
+    expect(user).toContain("Preserve names, URLs, inline code");
+  });
+});
 
 describe("buildRewriteCoachPrompt", () => {
   it("includes the selected text and asks for JSON output", () => {
@@ -7,5 +34,58 @@ describe("buildRewriteCoachPrompt", () => {
     expect(user).toContain("I has a apple");
     expect(system).toContain("rewritten");
     expect(system).toContain("why");
+    expect(system).toContain("communicative job");
+    expect(system).toContain("make only minimal edits");
+  });
+});
+
+describe("buildNativeEnglishExpressionPrompt", () => {
+  it("asks for native English expression rather than literal translation", () => {
+    const { system, user } = buildNativeEnglishExpressionPrompt("我今天有点撑不住了", "natural");
+    expect(user).toContain("我今天有点撑不住了");
+    expect(system).toContain("Do not translate word for word");
+    expect(system).toContain("English speech act");
+    expect(system).toContain("native English speaker");
+    expect(system).toContain("rewritten");
+  });
+});
+
+describe("speech prompt builders", () => {
+  it("builds exact-text teacher speech instructions for mixed Chinese and English", () => {
+    const instructions = buildTeacherSpeechInstructions("Keep a calm voice.");
+    expect(instructions).toContain("Read the text exactly as written");
+    expect(instructions).toContain("Do not translate");
+    expect(instructions).toContain("General American");
+    expect(instructions).toContain("mixes Chinese and English");
+    expect(instructions).toContain("Keep a calm voice.");
+  });
+
+  it("wraps Gemini teacher speech with a clear text boundary", () => {
+    const prompt = buildGeminiSpeechPrompt("Why does my Dropbox keep syncing the files?", true);
+    expect(prompt).toContain("Speak only the text after TEXT");
+    expect(prompt).toContain("TEXT:");
+    expect(prompt).toContain("Why does my Dropbox keep syncing the files?");
+    expect(prompt).toContain("Do not translate");
+  });
+
+  it("leaves normal Gemini speech as the exact input text", () => {
+    expect(buildGeminiSpeechPrompt("Hello.", false)).toBe("Hello.");
+  });
+});
+
+describe("buildPronunciationFeedbackPrompt", () => {
+  it("asks for one concise JSON coaching tip grounded in the transcript diff", () => {
+    const { system, user } = buildPronunciationFeedbackPrompt({
+      target: "I really want it.",
+      transcript: "I want it.",
+      matched: 3,
+      total: 4,
+      missed: ["really"],
+      extra: [],
+    });
+    expect(system).toContain("one concise Simplified Chinese coaching tip");
+    expect(system).toContain('{"tip":"..."}');
+    expect(user).toContain("Missed: really");
+    expect(user).toContain("Matched: 3/4");
   });
 });

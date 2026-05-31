@@ -55,6 +55,51 @@ describe("wrapPCMInWAV", () => {
 });
 
 describe("synthesize", () => {
+  it("Qwen teacher mode sends exact-text shadowing instructions to the instruct model", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ output: { audio: { data: "AQIDBA==" } } }), { status: 200 }),
+    );
+    const buffers = await synthesize(
+      "Why does my Dropbox keep syncing the files?",
+      ttsConfig({
+        provider: "qwen",
+        dashscopeApiKey: "k",
+        qwenModel: "qwen3-tts-instruct-flash",
+        qwenInstructions: "Keep a calm voice.",
+      }),
+      { slow: true },
+    );
+    expect(buffers).toHaveLength(1);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body.input.text).toBe("Why does my Dropbox keep syncing the files?");
+    expect(body.input.instructions).toContain("Read the text exactly as written");
+    expect(body.input.instructions).toContain("Do not translate");
+    expect(body.input.instructions).toContain("General American");
+    expect(body.input.instructions).toContain("Keep a calm voice.");
+  });
+
+  it("Gemini teacher mode wraps the exact text in a speech prompt instead of a translation prompt", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { data: "AQIDBA==" } }] } }] }),
+        { status: 200 },
+      ),
+    );
+    const buffers = await synthesize(
+      "Read VS Code aloud.",
+      ttsConfig({ provider: "gemini", geminiApiKey: "k", geminiVoice: "Kore" }),
+      { slow: true },
+    );
+    expect(buffers).toHaveLength(1);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    const prompt = body.contents[0].parts[0].text;
+    expect(prompt).toContain("Speak only the text after TEXT");
+    expect(prompt).toContain("TEXT:\nRead VS Code aloud.");
+    expect(prompt).toContain("Do not translate");
+  });
+
   it("Qwen falls back to the audio URL when inline data is an empty string", async () => {
     // Qwen3-TTS returns { audio: { data: "", url: "…wav" } } — an empty string,
     // not null, so the code must use || (not ??) to reach the URL.

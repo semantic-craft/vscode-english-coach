@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("englishCoach.focus", () => {
       void vscode.commands.executeCommand("englishCoach.sidebar.focus");
     }),
-    vscode.commands.registerCommand("englishCoach.setApiKey", () => setApiKeyInteractive(context)),
+    vscode.commands.registerCommand("englishCoach.setApiKey", (preset) => setApiKeyInteractive(context, preset)),
     vscode.commands.registerCommand("englishCoach.reviewDeck", () => provider.startReview()),
     vscode.commands.registerCommand("englishCoach.history.reload", (entry: HistoryEntry) =>
       provider.restoreEntry(entry),

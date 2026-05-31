@@ -13,12 +13,11 @@ interface ProviderModels {
 
 const MODEL_CATALOG: Record<ProviderId, ProviderModels> = {
   qwen: {
-    fast: { id: "qwen-plus", title: "Qwen Plus" },
-    pro: { id: "qwen-max", title: "Qwen Max" },
+    fast: { id: "qwen3.6-flash", title: "Qwen 3.6 Flash" },
+    pro: { id: "qwen3.6-plus", title: "Qwen 3.6 Plus" },
     all: [
-      { id: "qwen-max", title: "Qwen Max" },
-      { id: "qwen-plus", title: "Qwen Plus" },
-      { id: "qwen-turbo", title: "Qwen Turbo" },
+      { id: "qwen3.6-flash", title: "Qwen 3.6 Flash" },
+      { id: "qwen3.6-plus", title: "Qwen 3.6 Plus" },
     ],
   },
   deepseek: {
@@ -33,48 +32,26 @@ const MODEL_CATALOG: Record<ProviderId, ProviderModels> = {
     fast: { id: "mimo-v2.5", title: "V2.5" },
     pro: { id: "mimo-v2.5-pro", title: "V2.5 Pro" },
     all: [
-      { id: "mimo-v2.5-pro", title: "V2.5 Pro" },
       { id: "mimo-v2.5", title: "V2.5" },
+      { id: "mimo-v2.5-pro", title: "V2.5 Pro" },
     ],
   },
   gemini: {
-    fast: { id: "gemini-3.5-flash", title: "3.5 Flash" },
-    pro: { id: "gemini-3.1-pro-preview", title: "3.1 Pro (Preview)" },
-    all: [
-      { id: "gemini-3.5-flash", title: "3.5 Flash" },
-      { id: "gemini-3.1-flash-lite", title: "3.1 Flash Lite" },
-      { id: "gemini-3.1-flash-lite-preview", title: "3.1 Flash Lite (Preview)" },
-      { id: "gemini-3.1-pro-preview", title: "3.1 Pro (Preview)" },
-      { id: "gemini-2.5-flash", title: "2.5 Flash" },
-      { id: "gemini-2.5-flash-lite", title: "2.5 Flash Lite" },
-      { id: "gemini-2.5-pro", title: "2.5 Pro" },
-    ],
+    fast: { id: "gemini-3.5-flash", title: "Gemini 3.5 Flash" },
+    pro: { id: "gemini-3.5-flash", title: "Gemini 3.5 Flash" },
+    all: [{ id: "gemini-3.5-flash", title: "Gemini 3.5 Flash" }],
   },
   minimax: {
     fast: { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
     pro: { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
     all: [
       { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
-      { id: "MiniMax-M2.7", title: "M2.7" },
-      { id: "MiniMax-M2.5", title: "M2.5" },
     ],
   },
   openai: {
-    fast: { id: "gpt-4.1-mini", title: "GPT-4.1 Mini" },
-    pro: { id: "gpt-4.1", title: "GPT-4.1" },
-    all: [
-      { id: "gpt-5.5", title: "GPT-5.5" },
-      { id: "gpt-5.5-pro", title: "GPT-5.5 Pro" },
-      { id: "gpt-5.4", title: "GPT-5.4" },
-      { id: "gpt-5.4-mini", title: "GPT-5.4 Mini" },
-      { id: "gpt-5.4-nano", title: "GPT-5.4 Nano" },
-      { id: "gpt-4.1", title: "GPT-4.1" },
-      { id: "gpt-4.1-mini", title: "GPT-4.1 Mini" },
-      { id: "gpt-4.1-nano", title: "GPT-4.1 Nano" },
-      { id: "o4-mini", title: "o4 Mini" },
-      { id: "gpt-4o", title: "GPT-4o" },
-      { id: "gpt-4o-mini", title: "GPT-4o Mini" },
-    ],
+    fast: { id: "gpt-5.5", title: "GPT-5.5" },
+    pro: { id: "gpt-5.5", title: "GPT-5.5" },
+    all: [{ id: "gpt-5.5", title: "GPT-5.5" }],
   },
 };
 
@@ -97,6 +74,10 @@ export function resolveModel(providerId: ProviderId, tier: string, customModel: 
   return customModel;
 }
 
+export function getProviderModelOptions(providerId: ProviderId): ModelEntry[] {
+  return MODEL_CATALOG[providerId].all;
+}
+
 export const SAY_IT_RIGHT_PROVIDER_IDS = ["qwen", "minimax", "mimo", "gemini", "openai"] as const;
 
 export type SayItRightProviderId = (typeof SAY_IT_RIGHT_PROVIDER_IDS)[number];
@@ -106,33 +87,21 @@ export const DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS: Record<SayItRightProviderId, 
   minimax: "MiniMax-M2.7-highspeed",
   mimo: "mimo-v2.5",
   gemini: "gemini-3.5-flash",
-  openai: "gpt-5.4-nano",
+  openai: "gpt-5.5",
 };
 
 export const SAY_IT_RIGHT_ANALYSIS_MODELS: Record<SayItRightProviderId, ModelEntry[]> = {
   qwen: [
     { id: "qwen3.6-flash", title: "Qwen 3.6 Flash" },
-    { id: "qwen3.7-max", title: "Qwen 3.7 Max" },
-    { id: "qwen3.5-flash", title: "Qwen 3.5 Flash" },
-    { id: "qwen-plus", title: "Qwen Plus" },
+    { id: "qwen3.6-plus", title: "Qwen 3.6 Plus" },
   ],
-  minimax: [
-    { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
-    { id: "MiniMax-M2.7", title: "M2.7" },
-  ],
+  minimax: [{ id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" }],
   mimo: [
     { id: "mimo-v2.5-pro", title: "V2.5 Pro" },
     { id: "mimo-v2.5", title: "V2.5" },
   ],
-  gemini: [
-    { id: "gemini-3.5-flash", title: "3.5 Flash" },
-    { id: "gemini-2.5-flash", title: "2.5 Flash" },
-  ],
-  openai: [
-    { id: "gpt-5.4-nano", title: "GPT-5.4 Nano" },
-    { id: "gpt-5.4-mini", title: "GPT-5.4 Mini" },
-    { id: "gpt-5.5", title: "GPT-5.5" },
-  ],
+  gemini: [{ id: "gemini-3.5-flash", title: "Gemini 3.5 Flash" }],
+  openai: [{ id: "gpt-5.5", title: "GPT-5.5" }],
 };
 
 export const DEFAULT_SAY_IT_RIGHT_TTS_MODELS: Record<SayItRightProviderId, string> = {
@@ -153,10 +122,7 @@ export const SAY_IT_RIGHT_TTS_MODELS: Record<SayItRightProviderId, ModelEntry[]>
     { id: "speech-2.8-hd", title: "Speech 2.8 HD" },
   ],
   mimo: [{ id: "mimo-v2.5-tts", title: "MiMo V2.5 TTS" }],
-  gemini: [
-    { id: "gemini-3.1-flash-tts-preview", title: "Gemini 3.1 Flash TTS Preview" },
-    { id: "gemini-2.5-flash-preview-tts", title: "Gemini 2.5 Flash Preview TTS" },
-  ],
+  gemini: [{ id: "gemini-3.1-flash-tts-preview", title: "Gemini 3.1 Flash TTS Preview" }],
   openai: [{ id: "gpt-4o-mini-tts", title: "GPT-4o Mini TTS" }],
 };
 

@@ -1,5 +1,33 @@
 # Say It Right Changelog
 
+## Unreleased
+
+- Clarified the Coach sidebar input and result copy per mode so Native English no longer looks like an English-only rewrite field.
+- Added direct Native English and Translate action buttons in the Coach sidebar.
+- Suppressed the English word-diff panel for translation and Chinese-to-English expression results.
+- Wrapped long pronunciation staves into multiple visual lines to keep word labels, IPA, and pitch curves readable.
+- Switched Qwen Coach and pronunciation-analysis defaults to Bailian Token Plan's Anthropic-compatible endpoint.
+- Kept Qwen Token Plan and DashScope API keys separate so Coach/analysis keys are no longer reused for Qwen TTS.
+- Limited Qwen text model choices to `qwen3.6-flash` and `qwen3.6-plus`.
+- Restricted Gemini Coach text model choices to `gemini-3.5-flash`.
+
+## [0.4.6] - 2026-05-31
+
+- Trimmed built-in model pickers to the current preferred set, including OpenAI analysis/Coach on `gpt-5.5` only.
+- Removed retired Qwen, MiMo, MiniMax, Gemini 2.5, and GPT 4.1/5.4 choices from Coach, pronunciation, TTS settings, and installed manifests.
+- Hardened stale-setting fallback so older locally saved model ids no longer reappear in the sidebar dropdowns.
+- Fixed OpenAI strict structured-output schemas for pronunciation analysis by converting optional schema fields to nullable required fields.
+- Tightened built-in prompts for teacher audio, prosody analysis, pronunciation feedback, Coach, Native English, and Translate.
+
+## [0.4.5] - 2026-05-31
+
+- Added a Coach sidebar model picker that switches `englishCoach.modelTier` to custom and writes provider-specific model settings.
+- Added a Coach sidebar thinking toggle (`off`, `on`, `auto`) for providers with compatible reasoning controls.
+- Added a Native English mode for Chinese input that asks providers for how a native speaker would express the same meaning, not a literal translation.
+- Updated the Coach model catalog/defaults to current flash-level choices for Qwen, MiniMax, MiMo, Gemini, and OpenAI.
+- Set OpenAI defaults to `gpt-5.5` and disable reasoning for supported GPT-5.x Chat Completions calls.
+- Centralized and tightened built-in prompts for TTS teacher audio, prosody analysis, pronunciation feedback, Coach, Native English, and Translate, with prompt-contract and request-body tests.
+
 ## [0.4.0] - 2026-05-30
 
 - Extended the everyday-English prosody correction layer across Qwen, Gemini, MiniMax, and MiMo analysis so provider output is normalized before the stave is drawn.

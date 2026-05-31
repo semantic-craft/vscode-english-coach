@@ -1,10 +1,30 @@
 import { describe, it, expect, vi } from "vitest";
-import { parseProsody, analyzeProsody, PROSODY_SCHEMA } from "../../src/core/prosody";
+import { parseProsody, analyzeProsody, buildProsodyPrompt, PROSODY_SCHEMA } from "../../src/core/prosody";
 import * as providers from "../../src/core/providers";
 
 const sample = JSON.stringify({
   text: "Go.", isGeneratedExample: false, ipa: "/ɡoʊ/",
   thoughtGroups: [{ tone: "fall", words: [{ text: "Go", syllables: ["Go"], stressIndex: 0, stressed: true, nuclear: true }] }],
+});
+
+describe("buildProsodyPrompt", () => {
+  it("frames the analysis as a learner-facing General American prosody plan", () => {
+    const { system, user } = buildProsodyPrompt("Why does my Dropbox keep syncing the files?", false);
+    expect(system).toContain("learner-facing General American prosody plan");
+    expect(system).toContain("Preserve the user's words exactly");
+    expect(system).toContain("Mark only what a learner should practice");
+    expect(system).toContain("Function words");
+    expect(system).toContain("leave linkToNext null");
+    expect(user).toContain("Input kind: sentence or paragraph");
+    expect(user).toContain("Why does my Dropbox keep syncing the files?");
+  });
+
+  it("asks single-word analysis to generate one everyday example sentence", () => {
+    const { user } = buildProsodyPrompt("sync", true);
+    expect(user).toContain("Input kind: single selected word");
+    expect(user).toContain("sourceWord");
+    expect(user).toContain("one short, natural everyday example sentence");
+  });
 });
 
 describe("parseProsody", () => {
@@ -251,7 +271,7 @@ describe("parseProsody", () => {
 describe("analyzeProsody", () => {
   it("calls the provider with the schema and returns a validated analysis", async () => {
     const spy = vi.spyOn(providers, "generateWithProvider").mockResolvedValue(sample);
-    const cfg = { id: "qwen", title: "Qwen", model: "qwen3.5-flash", apiKey: "k", baseURL: "b", apiProtocol: "openai" } as any;
+    const cfg = { id: "qwen", title: "Qwen", model: "qwen3.6-flash", apiKey: "k", baseURL: "b", apiProtocol: "openai" } as any;
     const result = await analyzeProsody("Go.", cfg, 1000, 2048);
     expect(result.text).toBe("Go.");
     expect(spy).toHaveBeenCalledWith(cfg, expect.anything(), 1000, 2048, expect.objectContaining({ responseJsonSchema: PROSODY_SCHEMA }));

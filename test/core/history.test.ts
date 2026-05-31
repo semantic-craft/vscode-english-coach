@@ -16,8 +16,11 @@ describe("mergeHistory", () => {
     expect(out[0].id).toBe("b");
   });
   it("keeps entries that differ in kind", () => {
-    const out = mergeHistory([entry({ id: "a", kind: "coach" })], entry({ id: "b", kind: "translate" }));
-    expect(out).toHaveLength(2);
+    const out = mergeHistory(
+      [entry({ id: "a", kind: "coach" }), entry({ id: "b", kind: "translate" })],
+      entry({ id: "c", kind: "express" }),
+    );
+    expect(out).toHaveLength(3);
   });
   it("caps the list at max", () => {
     const existing = Array.from({ length: 3 }, (_, i) => entry({ id: `e${i}`, source: `s${i}` }));
@@ -47,6 +50,7 @@ describe("mergeHistory", () => {
 describe("isHistoryEntry", () => {
   it("accepts a valid entry and rejects junk", () => {
     expect(isHistoryEntry(entry({}))).toBe(true);
+    expect(isHistoryEntry(entry({ kind: "express" }))).toBe(true);
     expect(isHistoryEntry({ id: "x" })).toBe(false);
     expect(isHistoryEntry(null)).toBe(false);
   });

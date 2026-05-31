@@ -28,7 +28,8 @@ export function buildTranslationPrompt(request: TranslationRequest): { system: s
   const promptProfile = request.promptProfile ?? defaultPromptProfile;
   const customInstructions = normalizeCustomInstructions(request.customPromptInstructions);
   const system = [
-    "You are a professional AI translator.",
+    "You are a professional meaning-first translator and native-language editor.",
+    "Before writing the answer, internally infer the speaker's intent, situation, relationship, implied tone, and practical purpose.",
     nativeExpressionInstruction(request.targetLanguageTitle),
     "Translate complete sentences and paragraphs by meaning, not as isolated dictionary entries.",
     "Return only the translation. Do not explain, annotate, quote the source, or wrap the answer in Markdown fences.",
@@ -58,7 +59,7 @@ function nativeExpressionInstruction(targetLanguageTitle: string): string {
   const generalInstruction = [
     `Write in ${targetLanguageTitle} the way a native speaker would naturally express the same idea.`,
     "Prefer idiomatic, fluent target-language wording over literal word-for-word translation.",
-    "Restructure sentences when needed so the result reads as originally written in the target language.",
+    "Restructure sentences when needed so the result reads as originally written in the target language, including changing the sentence shape when that is what the target language would naturally do.",
     "Do not over-interpret, summarize, embellish, or add information that is not present in the source.",
     "Preserve the speaker's intent, tone, emphasis, factual content, and level of formality.",
   ];
@@ -86,14 +87,18 @@ export function buildRewriteCoachPrompt(text: string, tone: RewriteTone = "natur
   const system = [
     "You are a bilingual English writing coach for a Chinese native speaker who wants to sound like a natural English speaker.",
     "",
+    "INTERNAL PROCESS:",
+    "First identify what the user is trying to do with the sentence: ask, explain, soften, complain, reassure, request, summarize, or make a point.",
+    "Then produce the English a native speaker would actually choose for that communicative job. Do not show this analysis.",
+    "",
     "REWRITE RULES:",
-    "Rewrite the selected text so it sounds natural, idiomatic, and conversational, like something a native English speaker would actually say.",
-    "If the selected text is in English, rewrite it in natural, everyday English. Keep the original meaning, intent, and level of politeness. Prefer everyday wording over stiff, formal, or textbook phrasing. Do not add new information. If the text is already natural, make only minimal edits.",
-    "If the selected text is in Chinese, render it as how a native English speaker would naturally express the same idea — not a literal or word-for-word translation, but the way someone would actually say it in English in real life. Match the tone, register, and politeness of the original. Do not add new information.",
+    "Rewrite the selected text so it sounds natural, idiomatic, and conversational, like something a native English speaker would actually say or write in that situation.",
+    "If the selected text is in English, revise it in natural everyday English. Keep the meaning, intent, and level of politeness. Prefer ordinary wording over stiff, formal, textbook, or translated phrasing. If it is already natural, make only minimal edits.",
+    "If the selected text is in Chinese, render it as native English expression, not a literal translation. You may reorder ideas, choose a different English speech act, compress repetition, or make implicit context explicit only when English normally requires it. Do not add new factual information.",
     `TONE: ${rewriteToneInstructions[tone]}`,
     "",
     "COACHING:",
-    "After rewriting, explain in Simplified Chinese why your version sounds more natural than the original. Point out the specific changes — word choice, collocations, idioms, sentence rhythm, register — and name the typical Chinese-learner habit each change fixes. Quote the English snippets you discuss. Be concrete and concise: 2 to 5 short bullet points.",
+    "After rewriting, explain in Simplified Chinese why your version sounds more natural than the original. Point out the specific changes: speech act, word choice, collocations, idioms, sentence rhythm, register, and what English leaves implicit. Quote the English snippets you discuss. Be concrete and concise: 2 to 5 short bullet points.",
     "",
     "OUTPUT FORMAT:",
     'Return ONLY a single JSON object, with no Markdown and no code fences: {"rewritten": string, "why": string}.',
@@ -102,6 +107,107 @@ export function buildRewriteCoachPrompt(text: string, tone: RewriteTone = "natur
   ].join("\n");
 
   const user = ["Selected text:", text].join("\n");
+
+  return { system, user };
+}
+
+export function buildNativeEnglishExpressionPrompt(
+  text: string,
+  tone: RewriteTone = "natural",
+): { system: string; user: string } {
+  const system = [
+    "You are a bilingual English expression coach for a Chinese native speaker.",
+    "",
+    "INTERNAL PROCESS:",
+    "The user will usually provide Chinese. Do not translate word for word.",
+    "First infer the communicative intent, situation, relationship, implied tone, and practical purpose of the Chinese sentence.",
+    "Then choose the English speech act a native speaker would naturally use in that same situation: direct request, softened request, complaint, reassurance, explanation, update, apology, boundary, or suggestion.",
+    "",
+    "TASK:",
+    "Write the English sentence or paragraph that a native English speaker would naturally use to express the same meaning in the same situation.",
+    "The final English can look structurally very different from the Chinese. It may reorder ideas, compress repeated wording, use idioms, or choose a more natural English speech act, as long as the original meaning, intent, and politeness are preserved.",
+    "Do not add new factual information, names, promises, emotions, or details that are not implied by the source.",
+    "If the source is ambiguous, choose the most likely everyday interpretation and keep the wording neutral.",
+    `TONE: ${rewriteToneInstructions[tone]}`,
+    "",
+    "COACHING:",
+    "Explain in Simplified Chinese why this is the natural English way to say it. Focus on the gap between literal translation and native expression: speech act, collocation, register, rhythm, and what English would leave implicit. Be concrete and concise: 2 to 5 short bullet points.",
+    "",
+    "OUTPUT FORMAT:",
+    'Return ONLY a single JSON object, with no Markdown and no code fences: {"rewritten": string, "why": string}.',
+    '"rewritten" must contain only the natural English expression itself — no labels, no surrounding quotation marks, no Markdown.',
+    '"why" is the Simplified Chinese coaching explanation, formatted as a Markdown bullet list where each point starts with "- ".',
+  ].join("\n");
+
+  const user = ["Chinese meaning to express in native English:", text].join("\n");
+
+  return { system, user };
+}
+
+export const PRONUNCIATION_FEEDBACK_SCHEMA: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: ["tip"],
+  properties: {
+    tip: { type: "string" },
+  },
+};
+
+const teacherSpeechBaseInstructions = [
+  "Read the text exactly as written for an adult learner who will shadow the audio.",
+  "Do not translate, paraphrase, explain, add examples, add greetings, or read these instructions aloud.",
+  "Use neutral General American pronunciation for English.",
+  "If the text mixes Chinese and English, keep each language as written: pronounce Chinese naturally and embedded English in General American.",
+  "Use a slightly slower teacher pace while keeping natural rhythm and connected speech.",
+  "Make stressed syllables a little clearer, but do not sound robotic or theatrical.",
+];
+
+export function buildTeacherSpeechInstructions(customInstructions?: string): string {
+  const custom = normalizeCustomInstructions(customInstructions);
+  return [...teacherSpeechBaseInstructions, custom ? `Additional user instructions: ${custom}` : ""]
+    .filter(Boolean)
+    .join(" ");
+}
+
+export function buildSpeechInstructions(customInstructions: string | undefined, teacher: boolean): string {
+  const custom = normalizeCustomInstructions(customInstructions);
+  return teacher ? buildTeacherSpeechInstructions(custom) : custom;
+}
+
+export function buildGeminiSpeechPrompt(text: string, teacher: boolean, customInstructions?: string): string {
+  const instructions = buildSpeechInstructions(customInstructions, teacher);
+  if (!instructions) return text;
+  return [
+    instructions,
+    "Speak only the text after TEXT. Do not say the word TEXT, the separator, or any instruction sentence.",
+    "TEXT:",
+    text,
+  ].join("\n");
+}
+
+export function buildPronunciationFeedbackPrompt(input: {
+  target: string;
+  transcript: string;
+  matched: number;
+  total: number;
+  missed: string[];
+  extra: string[];
+}): { system: string; user: string } {
+  const system = [
+    "You are a practical English pronunciation coach.",
+    "Use the transcript only as evidence of what the learner likely missed or inserted.",
+    "Return exactly one concise Simplified Chinese coaching tip about stress, weak forms, rhythm, intonation, or a clearly missed word.",
+    "Do not diagnose accent broadly. Do not mention ASR uncertainty unless the transcript is too sparse to be useful.",
+    'Return only json: {"tip":"..."} with no Markdown and no code fences.',
+  ].join(" ");
+
+  const user = [
+    `Target: ${input.target}`,
+    `Learner transcript: ${input.transcript}`,
+    `Matched: ${input.matched}/${input.total}`,
+    `Missed: ${input.missed.join(", ") || "none"}`,
+    `Extra: ${input.extra.join(", ") || "none"}`,
+  ].join("\n");
 
   return { system, user };
 }

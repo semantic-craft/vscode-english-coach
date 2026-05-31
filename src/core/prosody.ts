@@ -44,20 +44,30 @@ export const PROSODY_SCHEMA: Record<string, unknown> = {
 };
 
 const SYSTEM = [
-  "You are an expert English pronunciation coach specializing in General American prosody.",
-  "Analyze the text for word stress (which syllable), sentence stress, and intonation per thought group. Mark ONLY what a learner needs to practice — do not over-annotate.",
-  "Thought groups: use as FEW as the sentence naturally needs (a short sentence is usually a single group). Each thought group has exactly ONE nuclear word — its main focus, normally the last content word — and that nuclear word must be marked stressed.",
-  "Tones: use ONLY 'fall', 'rise', or 'level'. Use 'fall' for statements, commands, and wh-questions; 'rise' for yes/no questions and polite requests; 'level' for any non-final thought group. Do NOT use 'fall-rise' or 'rise-fall'.",
-  "Stress: content words (nouns, main verbs, adjectives, adverbs, wh-words, phrasal-verb particles such as off/out/up) carry stress; function words (articles, prepositions, auxiliaries, pronouns, conjunctions) are reduced — set their stressIndex to null and stressed to false — unless genuinely contrastive. Do not stress a word just to fill space.",
-  "stressIndex must point to the one syllable that carries primary stress within that word's syllables array, or null for a reduced word. Split each word into real syllables. Use General American IPA. Do not put punctuation inside word.text.",
-  "Connected speech: leave linkToNext null for every word. The app adds the clear liaisons itself — do not add linking marks yourself.",
+  "You are an expert English pronunciation coach building a learner-facing General American prosody plan for a visual practice stave.",
+  "Analyze word stress, sentence stress, weak forms, thought groups, and intonation. Mark only what a learner should practice; do not over-annotate.",
+  "Preserve the user's words exactly in order, but remove surrounding punctuation from each word.text. Do not rewrite, translate, expand, or correct the sentence.",
+  "Thought groups: use as few groups as naturally possible. A short sentence is usually one group. Each group has exactly one nuclear word, normally the last natural content focus, and that nuclear word must be stressed.",
+  "Tones: use only 'fall', 'rise', or 'level'. Use 'fall' for statements, commands, and wh-questions; 'rise' for yes/no questions and polite requests; 'level' for non-final groups. Do not use 'fall-rise' or 'rise-fall'.",
+  "Stress: content words (nouns, main verbs, adjectives, adverbs, wh-words, negatives, and phrasal-verb particles such as off/out/up) carry stress. Function words (articles, prepositions, auxiliaries, pronouns, conjunctions) are reduced unless genuinely contrastive.",
+  "For a reduced word, set stressIndex to null and stressed to false. For a stressed word, stressIndex must point to the primary-stress syllable in the syllables array. Split each word into real spelling syllables and provide General American IPA.",
+  "Connected speech: leave linkToNext null for every word. The app adds clear learner-facing liaisons itself.",
   'Respond with ONLY a single JSON object matching the required schema — no markdown code fences, no commentary, and do not return the schema itself. (Some providers\' JSON mode requires the literal word "json" to appear in the prompt.)',
 ].join("\n\n");
 
 export function buildProsodyPrompt(text: string, isWord: boolean): { system: string; user: string } {
   const user = isWord
-    ? `The user selected a single word: "${text}". Set isGeneratedExample=true, sourceWord="${text}", generate ONE natural example sentence using it, put that sentence in "text", and analyze that sentence.`
-    : `Analyze this text: "${text}". Set isGeneratedExample=false.`;
+    ? [
+        "Input kind: single selected word.",
+        "Selected word:",
+        text,
+        "",
+        "Set isGeneratedExample=true and sourceWord to the selected word.",
+        "Generate one short, natural everyday example sentence using that word, put the sentence in text, and analyze that sentence.",
+      ].join("\n")
+    : ["Input kind: sentence or paragraph.", "Analyze the text below and set isGeneratedExample=false.", "", "Text:", text].join(
+        "\n",
+      );
   return { system: SYSTEM, user };
 }
 
@@ -253,8 +263,10 @@ function buildProsodyRetryPrompt(
 ): { system: string; user: string } {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const target = isWord
-    ? `The user selected one word: "${text}". Generate one natural example sentence using it and analyze that sentence.`
-    : `Analyze this text: "${text}".`;
+    ? ["Input kind: single selected word.", "Selected word:", text, "Generate one natural example sentence using it."].join(
+        "\n",
+      )
+    : ["Input kind: sentence or paragraph.", "Text:", text].join("\n");
   return {
     system: [
       SYSTEM,

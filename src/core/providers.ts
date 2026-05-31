@@ -1,5 +1,5 @@
 import { buildTranslationPrompt } from "./prompt";
-import { ProviderAPIProtocol, ProviderConfig, ProviderId, TranslationRequest } from "./types";
+import { ProviderAPIProtocol, ProviderConfig, ProviderId, ReasoningMode, TranslationRequest } from "./types";
 
 interface OpenAICompatibleResponse {
   choices?: Array<{
@@ -100,14 +100,7 @@ async function generateWithGeminiProtocol(
   options: GenerationOptions = {},
 ): Promise<string> {
   const generationConfig: Record<string, unknown> = { temperature: 0.3, maxOutputTokens };
-  // Gemini 2.5+ Flash enable "thinking" by default, and thinking tokens are drawn from
-  // maxOutputTokens — which can exhaust the budget and truncate the JSON answer mid-string
-  // ("Unterminated string in JSON"). Disable thinking for Flash models (where a 0 budget is
-  // allowed) so the whole budget goes to the response, matching how we disable it for the
-  // Anthropic/MiMo paths. Pro models (which require thinking) are left untouched.
-  if (/flash/i.test(config.model)) {
-    generationConfig.thinkingConfig = { thinkingBudget: 0 };
-  }
+  applyGeminiThinkingConfig(generationConfig, config.model, config.reasoningMode);
   const structuredPrompt = applyStructuredPromptOptions(prompt, options);
   applyGeminiResponseFormat(generationConfig, options);
 
@@ -148,14 +141,17 @@ async function generateWithAnthropicProtocol(
     anthropicMessagesUrl(config.baseURL),
     timeoutMs,
     anthropicCompatibleHeaders(config.apiKey),
-    withDisabledThinking({
-      model: config.model,
-      system: structuredPrompt.system,
-      messages: [{ role: "user", content: structuredPrompt.user }],
-      max_tokens: maxOutputTokens,
-      temperature: 0.3,
-      stream: false,
-    }),
+    applyAnthropicThinkingConfig(
+      {
+        model: config.model,
+        system: structuredPrompt.system,
+        messages: [{ role: "user", content: structuredPrompt.user }],
+        max_tokens: maxOutputTokens,
+        temperature: 0.3,
+        stream: false,
+      },
+      config,
+    ),
   );
 
   const content = response.content
@@ -185,7 +181,7 @@ async function generateWithOpenAIProtocol(
     ],
     stream: false,
   };
-  applyOpenAIGenerationParams(body, config.model, maxOutputTokens, 0.3);
+  applyOpenAIGenerationParams(body, config.model, maxOutputTokens, 0.3, config.reasoningMode);
   applyOpenAIProviderQuirks(body, config);
   applyOpenAIResponseFormat(body, options, config.id);
   const finalPrompt = needsPromptEmbeddedSchema(config, options) ? applyStructuredPromptOptions(prompt, options) : prompt;
@@ -226,7 +222,7 @@ async function translateWithOpenAICompatible(config: ProviderConfig, request: Tr
     ],
     stream: false,
   };
-  applyOpenAIGenerationParams(body, config.model, request.maxOutputTokens, 0.2);
+  applyOpenAIGenerationParams(body, config.model, request.maxOutputTokens, 0.2, config.reasoningMode);
   applyOpenAIProviderQuirks(body, config);
 
   const response = await postJson<OpenAICompatibleResponse>(
@@ -250,14 +246,17 @@ async function translateWithAnthropicCompatible(config: ProviderConfig, request:
     anthropicMessagesUrl(config.baseURL),
     request.timeoutMs,
     anthropicCompatibleHeaders(config.apiKey),
-    withDisabledThinking({
-      model: config.model,
-      system: prompt.system,
-      messages: [{ role: "user", content: prompt.user }],
-      max_tokens: request.maxOutputTokens,
-      temperature: 0.2,
-      stream: false,
-    }),
+    applyAnthropicThinkingConfig(
+      {
+        model: config.model,
+        system: prompt.system,
+        messages: [{ role: "user", content: prompt.user }],
+        max_tokens: request.maxOutputTokens,
+        temperature: 0.2,
+        stream: false,
+      },
+      config,
+    ),
   );
 
   const content = response.content
@@ -274,6 +273,11 @@ async function translateWithAnthropicCompatible(config: ProviderConfig, request:
 
 async function translateWithGemini(config: ProviderConfig, request: TranslationRequest): Promise<string> {
   const prompt = buildTranslationPrompt(request);
+  const generationConfig: Record<string, unknown> = {
+    temperature: 0.2,
+    maxOutputTokens: request.maxOutputTokens,
+  };
+  applyGeminiThinkingConfig(generationConfig, config.model, config.reasoningMode);
   const body = {
     system_instruction: {
       parts: [{ text: prompt.system }],
@@ -284,10 +288,7 @@ async function translateWithGemini(config: ProviderConfig, request: TranslationR
         parts: [{ text: prompt.user }],
       },
     ],
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: request.maxOutputTokens,
-    },
+    generationConfig,
   };
 
   const response = await postJson<GeminiResponse>(
@@ -410,19 +411,32 @@ function isReasoningModel(model: string): boolean {
   return /^(o\d|gpt-5)/i.test(model.trim());
 }
 
+function supportsNoReasoningEffort(model: string): boolean {
+  const match = model.trim().toLowerCase().match(/^gpt-5\.(\d+)/);
+  return match ? Number(match[1]) >= 1 : false;
+}
+
+function resolveReasoningMode(mode: ReasoningMode | undefined): ReasoningMode {
+  return mode === "on" || mode === "auto" ? mode : "off";
+}
+
 function applyOpenAIGenerationParams(
   body: Record<string, unknown>,
   model: string,
   maxOutputTokens: number,
   temperature: number,
+  reasoningMode: ReasoningMode | undefined,
 ): void {
   if (isReasoningModel(model)) {
     body.max_completion_tokens = maxOutputTokens;
-    // Translation is latency-sensitive and does not benefit from reasoning
-    // tokens. `minimal` (the lowest GPT-5.x setting that still works on every
-    // reasoning model) cuts first-token latency and per-call cost without
-    // changing output quality on short prompts.
-    body.reasoning_effort = "minimal";
+    const mode = resolveReasoningMode(reasoningMode);
+    if (mode === "off") {
+      // gpt-5.1+ accepts `none`; older GPT-5/o-series models still need the
+      // lowest broadly compatible effort value.
+      body.reasoning_effort = supportsNoReasoningEffort(model) ? "none" : "minimal";
+    } else if (mode === "on") {
+      body.reasoning_effort = "medium";
+    }
     return;
   }
 
@@ -459,19 +473,19 @@ function applyOpenAIResponseFormat(body: Record<string, unknown>, options: Gener
 }
 
 /**
- * OpenAI's strict JSON Schema rejects Gemini-specific keys like
- * `propertyOrdering` with `Unknown parameter`. Strip them so the same schema
- * object works for both providers.
+ * OpenAI strict structured outputs require every key in `properties` to be
+ * listed in `required`. Preserve our optional-field semantics by making those
+ * originally optional fields nullable on the OpenAI wire schema.
  */
 function toOpenAIJsonSchema(schema: Record<string, unknown>): Record<string, unknown> {
   const clone = JSON.parse(JSON.stringify(schema)) as Record<string, unknown>;
-  stripGeminiOnlyKeys(clone);
+  normalizeOpenAIStrictSchema(clone);
   return clone;
 }
 
-function stripGeminiOnlyKeys(node: unknown): void {
+function normalizeOpenAIStrictSchema(node: unknown): void {
   if (Array.isArray(node)) {
-    node.forEach(stripGeminiOnlyKeys);
+    node.forEach(normalizeOpenAIStrictSchema);
     return;
   }
   if (!node || typeof node !== "object") {
@@ -479,14 +493,76 @@ function stripGeminiOnlyKeys(node: unknown): void {
   }
   const record = node as Record<string, unknown>;
   delete record.propertyOrdering;
+
+  const properties = record.properties;
+  if (properties && typeof properties === "object" && !Array.isArray(properties)) {
+    const props = properties as Record<string, unknown>;
+    const previousRequired = new Set(
+      Array.isArray(record.required) ? record.required.filter((key): key is string => typeof key === "string") : [],
+    );
+    record.required = Object.keys(props);
+    record.additionalProperties = false;
+    for (const [key, value] of Object.entries(props)) {
+      if (!previousRequired.has(key)) {
+        makeNullableOpenAIProperty(value);
+      }
+      normalizeOpenAIStrictSchema(value);
+    }
+  }
+
+  if (record.items) {
+    normalizeOpenAIStrictSchema(record.items);
+  }
+
   for (const value of Object.values(record)) {
-    stripGeminiOnlyKeys(value);
+    if (value !== properties && value !== record.items) {
+      normalizeOpenAIStrictSchema(value);
+    }
+  }
+}
+
+function makeNullableOpenAIProperty(node: unknown): void {
+  if (!node || typeof node !== "object" || Array.isArray(node)) {
+    return;
+  }
+
+  const record = node as Record<string, unknown>;
+  const type = record.type;
+  if (typeof type === "string") {
+    record.type = type === "null" ? "null" : [type, "null"];
+  } else if (Array.isArray(type) && !type.includes("null")) {
+    record.type = [...type, "null"];
+  }
+
+  if (Array.isArray(record.enum) && !record.enum.includes(null)) {
+    record.enum = [...record.enum, null];
   }
 }
 
 function applyGeminiResponseFormat(generationConfig: Record<string, unknown>, options: GenerationOptions): void {
   if (options.responseMimeType === "application/json" || options.responseJsonSchema) {
     generationConfig.responseMimeType = "application/json";
+  }
+}
+
+function applyGeminiThinkingConfig(
+  generationConfig: Record<string, unknown>,
+  model: string,
+  reasoningMode: ReasoningMode | undefined,
+): void {
+  const mode = resolveReasoningMode(reasoningMode);
+  if (mode === "auto") return;
+
+  const normalized = model.trim().toLowerCase();
+  if (/gemini-3\..*pro/.test(normalized)) {
+    return;
+  }
+  if (/gemini-3/.test(normalized)) {
+    generationConfig.thinkingConfig = { thinkingLevel: mode === "off" ? "minimal" : "medium" };
+    return;
+  }
+  if (/gemini-2\.5.*flash/.test(normalized)) {
+    generationConfig.thinkingConfig = { thinkingBudget: mode === "off" ? 0 : -1 };
   }
 }
 
@@ -513,7 +589,16 @@ function openAICompatibleHeaders(config: ProviderConfig): Record<string, string>
 
 function applyOpenAIProviderQuirks(body: Record<string, unknown>, config: ProviderConfig): void {
   if (config.id === "mimo") {
-    body.thinking = { type: "disabled" };
+    const mode = resolveReasoningMode(config.reasoningMode);
+    if (mode !== "auto") {
+      body.thinking = { type: mode === "on" ? "enabled" : "disabled" };
+    }
+  }
+  if (config.id === "qwen") {
+    const mode = resolveReasoningMode(config.reasoningMode);
+    if (mode !== "auto") {
+      body.enable_thinking = mode === "on";
+    }
   }
 }
 
@@ -522,14 +607,18 @@ function needsPromptEmbeddedSchema(config: ProviderConfig, options: GenerationOp
 }
 
 /**
- * DeepSeek v4 and MiMo v2.5 default to `thinking: enabled`, which adds
+ * DeepSeek v4, MiniMax M2.7, and MiMo v2.5 can emit thinking/reasoning, which adds
  * first-token latency and silently ignores `temperature`. Translation is
  * latency-sensitive and benefits from temperature control, so we explicitly
- * disable thinking for every Anthropic-compatible request. Providers that
- * don't recognize the key (vanilla Anthropic) ignore it.
+ * disable thinking by default for every Anthropic-compatible request. When
+ * `on` is selected we avoid injecting a disabled thinking flag and let the
+ * provider use its native reasoning behavior.
  */
-function withDisabledThinking<T extends Record<string, unknown>>(body: T): T & { thinking: { type: "disabled" } } {
-  return { ...body, thinking: { type: "disabled" } };
+function applyAnthropicThinkingConfig<T extends Record<string, unknown>>(
+  body: T,
+  config: ProviderConfig,
+): T | (T & { thinking: { type: "disabled" } }) {
+  return resolveReasoningMode(config.reasoningMode) === "off" ? { ...body, thinking: { type: "disabled" } } : body;
 }
 
 function applyStructuredPromptOptions(
@@ -594,9 +683,9 @@ function isModelNotFoundError(message: string): boolean {
  * without a separate setting.
  */
 export function detectProtocol(id: ProviderId, baseURL: string): ProviderAPIProtocol {
-  if (id === "gemini" || id === "openai" || id === "qwen") return "openai";
   const lower = baseURL.toLowerCase();
   if (lower.includes("/anthropic") || lower.includes("/coding")) return "anthropic";
+  if (id === "gemini" || id === "openai" || id === "qwen") return "openai";
   if (lower.includes("moonshot.") || /\/v1(\/chat\/completions)?\/?$/.test(lower)) return "openai";
   return "anthropic";
 }

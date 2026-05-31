@@ -1,4 +1,5 @@
 import { TTSProvider } from "./types";
+import { buildGeminiSpeechPrompt, buildSpeechInstructions } from "./prompt";
 
 export interface TTSConfig {
   provider: TTSProvider;
@@ -95,9 +96,7 @@ async function synthesizeWithGemini(
   if (!apiKey) throw new Error("Add a Gemini API key to use Gemini read-aloud.");
   const model = config.geminiModel.trim() || GEMINI_TTS_DEFAULT_MODEL;
   const voiceName = config.geminiVoice.trim() || GEMINI_DEFAULT_VOICE;
-  const spokenText = slow
-    ? `Read the following slowly and clearly, enunciating each word like a language teacher helping a learner: ${text}`
-    : text;
+  const spokenText = buildGeminiSpeechPrompt(text, slow);
 
   const response = await fetch(`${GEMINI_TTS_BASE_URL}/models/${model}:generateContent`, {
     method: "POST",
@@ -129,15 +128,13 @@ async function synthesizeWithQwen(
   signal?: AbortSignal,
 ): Promise<Buffer> {
   const apiKey = config.dashscopeApiKey.trim();
-  if (!apiKey) throw new Error("Add a DashScope API key to use Qwen read-aloud.");
+  if (!apiKey) throw new Error("Add a Qwen Speech/TTS key (DashScope) to use Qwen read-aloud.");
   const model = config.qwenModel === QWEN_TTS_INSTRUCT_MODEL ? QWEN_TTS_INSTRUCT_MODEL : QWEN_TTS_DEFAULT_MODEL;
   const voice = config.qwenVoice.trim() || QWEN_TTS_DEFAULT_VOICE;
   const languageType = config.qwenLanguageType.trim() || "Auto";
   const instructions =
     model === QWEN_TTS_INSTRUCT_MODEL
-      ? [config.qwenInstructions.trim(), slow ? "Read slowly and clearly, enunciating each word." : ""]
-          .filter(Boolean)
-          .join(" ")
+      ? buildSpeechInstructions(config.qwenInstructions, slow)
       : "";
 
   const response = await fetch(qwenGenerationUrl(config.qwenBaseURL), {

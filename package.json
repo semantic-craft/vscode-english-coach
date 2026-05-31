@@ -2,7 +2,7 @@
   "name": "vscode-say-it-right",
   "displayName": "Say It Right",
   "description": "Practice English pronunciation in VS Code with stress, intonation, rhythm, linking, IPA, shadowing loops, and model speech.",
-  "version": "0.4.4",
+  "version": "0.4.7",
   "keywords": [
     "english",
     "pronunciation",
@@ -201,8 +201,18 @@
             "pro",
             "custom"
           ],
-          "default": "pro",
-          "description": "Which model tier to use. Custom uses each provider's Model setting."
+          "default": "custom",
+          "description": "Which model tier to use. Custom uses each provider's Model setting; the sidebar model picker switches this to Custom."
+        },
+        "englishCoach.reasoningMode": {
+          "type": "string",
+          "enum": [
+            "off",
+            "on",
+            "auto"
+          ],
+          "default": "off",
+          "description": "Controls provider reasoning/thinking for Coach and Translate. Off minimizes latency; On enables medium/dynamic thinking where supported; Auto uses provider defaults."
         },
         "englishCoach.requestTimeoutSeconds": {
           "type": "number",
@@ -218,11 +228,16 @@
         },
         "englishCoach.qwen.baseURL": {
           "type": "string",
-          "default": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+          "default": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
+          "description": "Qwen text-generation base URL used by Coach, Translate, and pronunciation analysis. Defaults to Bailian Token Plan's Anthropic-compatible endpoint for lower latency; Qwen TTS keeps its separate DashScope /api/v1 setting."
         },
         "englishCoach.qwen.model": {
           "type": "string",
-          "default": "qwen-plus"
+          "enum": [
+            "qwen3.6-flash",
+            "qwen3.6-plus"
+          ],
+          "default": "qwen3.6-flash"
         },
         "englishCoach.deepseek.enabled": {
           "type": "boolean",
@@ -247,10 +262,10 @@
         "englishCoach.mimo.model": {
           "type": "string",
           "enum": [
-            "mimo-v2.5-pro",
-            "mimo-v2.5"
+            "mimo-v2.5",
+            "mimo-v2.5-pro"
           ],
-          "default": "mimo-v2.5-pro"
+          "default": "mimo-v2.5"
         },
         "englishCoach.gemini.enabled": {
           "type": "boolean",
@@ -262,6 +277,9 @@
         },
         "englishCoach.gemini.model": {
           "type": "string",
+          "enum": [
+            "gemini-3.5-flash"
+          ],
           "default": "gemini-3.5-flash"
         },
         "englishCoach.minimax.enabled": {
@@ -274,6 +292,9 @@
         },
         "englishCoach.minimax.model": {
           "type": "string",
+          "enum": [
+            "MiniMax-M2.7-highspeed"
+          ],
           "default": "MiniMax-M2.7-highspeed"
         },
         "englishCoach.openai.enabled": {
@@ -286,7 +307,10 @@
         },
         "englishCoach.openai.model": {
           "type": "string",
-          "default": "gpt-4.1-mini"
+          "enum": [
+            "gpt-5.5"
+          ],
+          "default": "gpt-5.5"
         },
         "englishCoach.tts.provider": {
           "type": "string",
@@ -320,7 +344,8 @@
         },
         "englishCoach.tts.qwenBaseURL": {
           "type": "string",
-          "default": "https://dashscope.aliyuncs.com/api/v1"
+          "default": "https://dashscope.aliyuncs.com/api/v1",
+          "description": "DashScope base URL for Qwen TTS. Requires the separate Qwen Speech/TTS key, not the Qwen Token Plan analysis key."
         },
         "englishCoach.tts.qwenInstructions": {
           "type": "string",
@@ -329,8 +354,7 @@
         "englishCoach.tts.geminiModel": {
           "type": "string",
           "enum": [
-            "gemini-3.1-flash-tts-preview",
-            "gemini-2.5-flash-preview-tts"
+            "gemini-3.1-flash-tts-preview"
           ],
           "default": "gemini-3.1-flash-tts-preview"
         },
@@ -409,9 +433,7 @@
           "type": "string",
           "enum": [
             "qwen3.6-flash",
-            "qwen3.7-max",
-            "qwen3.5-flash",
-            "qwen-plus"
+            "qwen3.6-plus"
           ],
           "default": "qwen3.6-flash",
           "description": "Qwen model used for pronunciation analysis."
@@ -419,8 +441,7 @@
         "sayItRight.analysisModel.minimax": {
           "type": "string",
           "enum": [
-            "MiniMax-M2.7-highspeed",
-            "MiniMax-M2.7"
+            "MiniMax-M2.7-highspeed"
           ],
           "default": "MiniMax-M2.7-highspeed",
           "description": "MiniMax model used for pronunciation analysis."
@@ -437,8 +458,7 @@
         "sayItRight.analysisModel.gemini": {
           "type": "string",
           "enum": [
-            "gemini-3.5-flash",
-            "gemini-2.5-flash"
+            "gemini-3.5-flash"
           ],
           "default": "gemini-3.5-flash",
           "description": "Gemini model used for pronunciation analysis."
@@ -446,11 +466,9 @@
         "sayItRight.analysisModel.openai": {
           "type": "string",
           "enum": [
-            "gpt-5.4-nano",
-            "gpt-5.4-mini",
             "gpt-5.5"
           ],
-          "default": "gpt-5.4-nano",
+          "default": "gpt-5.5",
           "description": "OpenAI model used for pronunciation analysis."
         },
         "sayItRight.ttsModel.qwen": {
@@ -490,8 +508,7 @@
         "sayItRight.ttsModel.gemini": {
           "type": "string",
           "enum": [
-            "gemini-3.1-flash-tts-preview",
-            "gemini-2.5-flash-preview-tts"
+            "gemini-3.1-flash-tts-preview"
           ],
           "default": "gemini-3.1-flash-tts-preview",
           "description": "Gemini TTS model used for read-aloud in the player."
@@ -573,8 +590,8 @@
         },
         "sayItRight.teacherInstructions": {
           "type": "string",
-          "default": "Read slowly and clearly like a patient English teacher. Articulate each word, slightly exaggerate stressed syllables, neutral General American accent.",
-          "description": "System instructions passed to the instructable TTS model for teacher-mode playback."
+          "default": "",
+          "description": "Optional extra instructions appended to the built-in teacher-mode TTS prompt. Leave empty to use the default clear General American shadowing voice."
         },
         "sayItRight.sentencesPerPage": {
           "type": "number",

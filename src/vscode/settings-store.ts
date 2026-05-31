@@ -1,12 +1,13 @@
 import * as vscode from "vscode";
-import { ProviderId, RewriteTone } from "../core/types";
+import { ProviderId, ReasoningMode, RewriteTone } from "../core/types";
 
-export type CoachMode = "coach" | "translate";
+export type CoachMode = "coach" | "express" | "translate";
 
 export interface UiState {
   mode: CoachMode;
   tone: RewriteTone;
   providerId: ProviderId | "";
+  reasoningMode: ReasoningMode;
   targetLanguage: string;
 }
 
@@ -16,6 +17,7 @@ const DEFAULT_STATE: UiState = {
   mode: "coach",
   tone: "natural",
   providerId: "",
+  reasoningMode: "off",
   targetLanguage: "auto",
 };
 

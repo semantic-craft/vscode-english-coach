@@ -1,4 +1,4 @@
-export type HistoryKind = "coach" | "translate";
+export type HistoryKind = "coach" | "express" | "translate";
 
 export interface HistoryEntry {
   id: string;
@@ -40,7 +40,7 @@ export function isHistoryEntry(value: unknown): value is HistoryEntry {
   const e = value as Record<string, unknown>;
   return (
     typeof e.id === "string" &&
-    (e.kind === "coach" || e.kind === "translate") &&
+    (e.kind === "coach" || e.kind === "express" || e.kind === "translate") &&
     typeof e.source === "string" &&
     typeof e.output === "string" &&
     typeof e.provider === "string" &&

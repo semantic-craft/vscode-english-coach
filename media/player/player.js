@@ -11,9 +11,11 @@ let mySrc = null;
 let loopCfg = { count: 3, gap: 1 };
 let abOn = false;
 
-let pageSentences = []; // [{ index, text, status, notes, bodyEl, ipaEl, blockEl, wordEls }]
+let pageSentences = []; // [{ index, text, status, rows, notes, bodyEl, ipaEl, blockEl, wordEls }]
 let activeIndex = -1; // global sentence index the controls act on
 let total = 0;
+let resizeTimer = null;
+let staveResizeObserver = null;
 
 let wordEls = []; // active sentence's word spans (for seek + playback highlight)
 let timings = [];
@@ -122,6 +124,100 @@ function fallbackPoints(row) {
   });
 }
 
+function targetLineWidth(containerEl) {
+  const rawWidth =
+    (containerEl && containerEl.clientWidth) ||
+    ($("stave") && $("stave").clientWidth) ||
+    Math.max(360, window.innerWidth - 72);
+  return clamp(rawWidth - 28, 360, 1320);
+}
+
+function tokenCellWidth(token) {
+  const text = String(token.text || "");
+  const syllables = syllablesFor(token).join("");
+  const ipa = String(token.ipa || "");
+  const textWidth = Math.max(text.length, syllables.length) * 11 + 28;
+  const ipaWidth = ipa.length ? ipa.length * 7 + 18 : 0;
+  const stressWidth = token.nuclear ? 132 : token.stressed ? 112 : 72;
+  return clamp(Math.max(textWidth, ipaWidth, stressWidth), 64, 184);
+}
+
+function visualLine(start, end, cellWidths) {
+  let widestCell = 0;
+  for (let i = start; i < end; i++) widestCell = Math.max(widestCell, cellWidths[i] || 64);
+  return { start, end, widestCell };
+}
+
+function visualLineWidth(line) {
+  const count = Math.max(1, line.end - line.start);
+  return count * line.widestCell + Math.max(0, count - 1) * 8;
+}
+
+function rebalanceVisualRows(lines, cellWidths, maxWidth) {
+  if (lines.length < 2) return lines;
+  const next = lines.map((line) => visualLine(line.start, line.end, cellWidths));
+  const minLastTokens = 3;
+  let last = next[next.length - 1];
+  let previous = next[next.length - 2];
+  while (last.end - last.start < minLastTokens && previous.end - previous.start > minLastTokens) {
+    const candidatePrevious = visualLine(previous.start, previous.end - 1, cellWidths);
+    const candidateLast = visualLine(previous.end - 1, last.end, cellWidths);
+    if (visualLineWidth(candidatePrevious) > maxWidth || visualLineWidth(candidateLast) > maxWidth) break;
+    next[next.length - 2] = candidatePrevious;
+    next[next.length - 1] = candidateLast;
+    previous = candidatePrevious;
+    last = candidateLast;
+  }
+  return next;
+}
+
+function splitVisualRows(row, containerEl) {
+  const tokens = row.tokens || [];
+  if (!tokens.length) return [];
+  const maxWidth = targetLineWidth(containerEl);
+  const cellWidths = tokens.map(tokenCellWidth);
+  const lines = [];
+  let start = 0;
+  while (start < tokens.length) {
+    let end = start;
+    let widestCell = 0;
+    while (end < tokens.length) {
+      const nextWidest = Math.max(widestCell, cellWidths[end]);
+      const count = end - start + 1;
+      const nextWidth = count * nextWidest + Math.max(0, count - 1) * 8;
+      if (count > 1 && nextWidth > maxWidth) break;
+      widestCell = nextWidest;
+      end++;
+    }
+    if (end === start) {
+      widestCell = cellWidths[start];
+      end++;
+    }
+    lines.push({ start, end, widestCell });
+    start = end;
+  }
+  return rebalanceVisualRows(lines, cellWidths, maxWidth);
+}
+
+function visualPoints(row, start, end) {
+  const tokens = row.tokens || [];
+  const basePoints = row.points && row.points.length === tokens.length ? row.points : fallbackPoints(row);
+  const count = Math.max(1, end - start);
+  const last = Math.max(count - 1, 1);
+  return basePoints.slice(start, end).map((point, localIndex) => ({
+    ...point,
+    x: count === 1 ? 50 : 8 + (localIndex / last) * 84,
+  }));
+}
+
+function visualRow(row, line) {
+  return {
+    ...row,
+    tokens: (row.tokens || []).slice(line.start, line.end),
+    points: visualPoints(row, line.start, line.end),
+  };
+}
+
 function pitchPath(points) {
   if (!points.length) return "";
   if (points.length === 1) {
@@ -168,6 +264,7 @@ function syllablesFor(token) {
 function renderWord(token, sentenceIndex, tokenIndex) {
   const kind = token.nuclear ? "nuclear" : token.stressed ? "stressed" : token.reduced ? "reduced" : "plain";
   const word = makeEl("span", "word " + kind);
+  if (String(token.text || "").length >= 10) word.classList.add("long-word");
   word.dataset.s = String(sentenceIndex);
   word.dataset.i = String(tokenIndex);
 
@@ -202,37 +299,85 @@ function renderWord(token, sentenceIndex, tokenIndex) {
   return word;
 }
 
-function renderGroups(rows, sentenceIndex) {
+function renderVisualGroup(row, sentenceIndex, tokenIndexStart, groupWidth, showToneBadge, continued) {
+  const group = makeEl("section", "group" + (continued ? " group-continued" : ""));
+  const tokenCount = Math.max(1, (row.tokens || []).length);
+  group.style.setProperty("--tokens", String(tokenCount));
+  group.style.setProperty("--group-width", `${Math.max(220, Math.round(groupWidth))}px`);
+  group.setAttribute("aria-label", `${row.toneLabel || TONE_LABEL[row.tone] || row.tone || "level"} thought group`);
+
+  const head = makeEl("div", "group-head");
+  if (showToneBadge) {
+    const badge = makeEl("span", "tone-badge", `${row.toneMark || TONE[row.tone] || "→"} ${row.toneLabel || TONE_LABEL[row.tone] || "level"}`);
+    badge.title = `intonation: ${row.toneLabel || row.tone || "level"}`;
+    head.appendChild(badge);
+  } else {
+    head.appendChild(makeEl("span", "tone-spacer", ""));
+  }
+  group.appendChild(head);
+  group.appendChild(renderPitch(row));
+
+  const wordRow = makeEl("div", "word-row");
+  (row.tokens || []).forEach((token, localIndex) => {
+    const tokenIndex = tokenIndexStart + localIndex;
+    wordRow.appendChild(renderWord(token, sentenceIndex, tokenIndex));
+  });
+  group.appendChild(wordRow);
+  return group;
+}
+
+function renderGroups(rows, sentenceIndex, containerEl) {
   const fragment = document.createDocumentFragment();
   const localWordEls = [];
   let runningIndex = 0;
   rows.forEach((row, ri) => {
-    const group = makeEl("section", "group");
-    const tokenCount = Math.max(1, (row.tokens || []).length);
-    const groupWidth = Math.max(220, tokenCount * 56);
-    group.style.setProperty("--tokens", String(tokenCount));
-    group.style.setProperty("--group-width", `${groupWidth}px`);
-    group.setAttribute("aria-label", `${row.toneLabel || TONE_LABEL[row.tone] || row.tone || "level"} thought group`);
-
-    const head = makeEl("div", "group-head");
-    const badge = makeEl("span", "tone-badge", `${row.toneMark || TONE[row.tone] || "→"} ${row.toneLabel || TONE_LABEL[row.tone] || "level"}`);
-    badge.title = `intonation: ${row.toneLabel || row.tone || "level"}`;
-    head.appendChild(badge);
-    group.appendChild(head);
-    group.appendChild(renderPitch(row));
-
-    const wordRow = makeEl("div", "word-row");
-    (row.tokens || []).forEach((token) => {
-      const tokenIndex = runningIndex++;
-      const word = renderWord(token, sentenceIndex, tokenIndex);
-      localWordEls[tokenIndex] = word;
-      wordRow.appendChild(word);
+    const lines = splitVisualRows(row, containerEl);
+    lines.forEach((line, lineIndex) => {
+      const tokens = (row.tokens || []).slice(line.start, line.end);
+      const groupWidth = tokens.length * line.widestCell + Math.max(0, tokens.length - 1) * 8;
+      const currentIndexStart = runningIndex;
+      const vRow = visualRow(row, line);
+      const group = renderVisualGroup(vRow, sentenceIndex, currentIndexStart, groupWidth, lineIndex === lines.length - 1, lineIndex > 0);
+      tokens.forEach((_token, localIndex) => {
+        const tokenIndex = currentIndexStart + localIndex;
+        const word = group.querySelector(`[data-s="${sentenceIndex}"][data-i="${tokenIndex}"]`);
+        if (word) localWordEls[tokenIndex] = word;
+      });
+      runningIndex += tokens.length;
+      fragment.appendChild(group);
     });
-    group.appendChild(wordRow);
-    fragment.appendChild(group);
+    if (!lines.length) {
+      runningIndex += (row.tokens || []).length;
+    }
     if (ri < rows.length - 1) fragment.appendChild(makeEl("div", "gbar", "‖"));
   });
   return { fragment, wordEls: localWordEls };
+}
+
+function renderSentenceAnalysis(sentence) {
+  if (!sentence || !sentence.bodyEl) return;
+  sentence.bodyEl.innerHTML = "";
+  if (!sentence.rows || !sentence.rows.length) {
+    sentence.bodyEl.textContent = "No prosody data.";
+    sentence.wordEls = [];
+  } else {
+    const { fragment, wordEls: localWordEls } = renderGroups(sentence.rows, sentence.index, sentence.bodyEl);
+    sentence.bodyEl.appendChild(fragment);
+    sentence.wordEls = localWordEls;
+  }
+  if (sentence.index === activeIndex) bindActive(sentence);
+}
+
+function rerenderReadySentences() {
+  for (const sentence of pageSentences) {
+    if (sentence.status === "ready") renderSentenceAnalysis(sentence);
+  }
+  updateHighlight();
+}
+
+function scheduleLayoutRefresh() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(rerenderReadySentences, 120);
 }
 
 function renderPage(msg) {
@@ -244,6 +389,7 @@ function renderPage(msg) {
     index: s.index,
     text: s.text,
     status: "pending",
+    rows: [],
     notes: "",
     bodyEl: null,
     ipaEl: null,
@@ -291,18 +437,10 @@ function applyAnalysis(msg) {
   const sentence = pageSentences.find((s) => s.index === msg.index);
   if (!sentence || !sentence.bodyEl) return;
   sentence.status = "ready";
+  sentence.rows = msg.rows || [];
   sentence.notes = msg.notes || "";
-  sentence.bodyEl.innerHTML = "";
-  if (!msg.rows || !msg.rows.length) {
-    sentence.bodyEl.textContent = "No prosody data.";
-    sentence.wordEls = [];
-  } else {
-    const { fragment, wordEls: localWordEls } = renderGroups(msg.rows, sentence.index);
-    sentence.bodyEl.appendChild(fragment);
-    sentence.wordEls = localWordEls;
-  }
+  renderSentenceAnalysis(sentence);
   if (sentence.ipaEl) sentence.ipaEl.textContent = msg.ipa || "";
-  if (sentence.index === activeIndex) bindActive(sentence);
 }
 
 function bindActive(sentence) {
@@ -481,7 +619,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (compare) compare.onclick = () => send("compare");
   const exportMine = $("exportMine");
   if (exportMine) exportMine.onclick = () => send("exportMine");
-  $("setKey").onclick = () => send("setApiKey");
+  $("setKey").onclick = () => send("setApiKey", { providerId: selection.speechProvider, kind: "speech" });
   $("analysisProvider").onchange = (e) => setPlayerConfig("analysisProvider", e.target.value);
   $("analysisModel").onchange = (e) => setPlayerConfig("analysisModel", e.target.value);
   $("speechProvider").onchange = (e) => setPlayerConfig("speechProvider", e.target.value);
@@ -494,5 +632,10 @@ document.addEventListener("DOMContentLoaded", () => {
   audio.addEventListener("loadedmetadata", () => {
     if (timingsEstimated) applyTimings(timings, true);
   });
+  window.addEventListener("resize", scheduleLayoutRefresh);
+  if (window.ResizeObserver) {
+    staveResizeObserver = new ResizeObserver(scheduleLayoutRefresh);
+    staveResizeObserver.observe($("stave"));
+  }
   send("ready");
 });

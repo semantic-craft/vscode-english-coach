@@ -1,4 +1,4 @@
-import { buildRewriteCoachPrompt } from "./prompt";
+import { buildNativeEnglishExpressionPrompt, buildRewriteCoachPrompt } from "./prompt";
 import { generateWithProvider } from "./providers";
 import { ProviderConfig, RewriteTone } from "./types";
 
@@ -32,6 +32,20 @@ export async function runRewrite(
   maxOutputTokens: number,
 ): Promise<RewriteResult> {
   const raw = await generateWithProvider(config, buildRewriteCoachPrompt(text, tone), timeoutMs, maxOutputTokens, {
+    responseMimeType: "application/json",
+    responseJsonSchema: REWRITE_RESPONSE_SCHEMA,
+  });
+  return parseRewriteResult(raw);
+}
+
+export async function runNativeEnglishExpression(
+  config: ProviderConfig,
+  text: string,
+  tone: RewriteTone,
+  timeoutMs: number,
+  maxOutputTokens: number,
+): Promise<RewriteResult> {
+  const raw = await generateWithProvider(config, buildNativeEnglishExpressionPrompt(text, tone), timeoutMs, maxOutputTokens, {
     responseMimeType: "application/json",
     responseJsonSchema: REWRITE_RESPONSE_SCHEMA,
   });

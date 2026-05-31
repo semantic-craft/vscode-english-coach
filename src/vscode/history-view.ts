@@ -13,14 +13,14 @@ export class HistoryTreeProvider implements vscode.TreeDataProvider<HistoryEntry
 
   getTreeItem(entry: HistoryEntry): vscode.TreeItem {
     const item = new vscode.TreeItem(oneLine(entry.source), vscode.TreeItemCollapsibleState.None);
-    item.description = `${entry.kind === "coach" ? "Coach" : "Translate"} · ${entry.provider}`;
+    item.description = `${kindTitle(entry.kind)} · ${entry.provider}`;
     item.tooltip = new vscode.MarkdownString(
       `**You:** ${entry.source}\n\n**Native:** ${entry.output}${entry.why ? `\n\n${entry.why}` : ""}`,
     );
     item.contextValue = "historyEntry";
     item.iconPath = entry.starred
       ? new vscode.ThemeIcon("star-full")
-      : new vscode.ThemeIcon(entry.kind === "coach" ? "sparkle" : "globe");
+      : new vscode.ThemeIcon(entry.kind === "translate" ? "globe" : "sparkle");
     item.command = { command: "englishCoach.history.reload", title: "Reload in Coach", arguments: [entry] };
     return item;
   }
@@ -33,6 +33,12 @@ export class HistoryTreeProvider implements vscode.TreeDataProvider<HistoryEntry
     this.storeListener.dispose();
     this._onDidChangeTreeData.dispose();
   }
+}
+
+function kindTitle(kind: HistoryEntry["kind"]): string {
+  if (kind === "translate") return "Translate";
+  if (kind === "express") return "Native English";
+  return "Coach";
 }
 
 function oneLine(text: string): string {
