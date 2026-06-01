@@ -110,7 +110,7 @@ export const SAY_IT_RIGHT_ANALYSIS_MODELS: Record<SayItRightProviderId, ModelEnt
 
 export const DEFAULT_SAY_IT_RIGHT_TTS_MODELS: Record<SayItRightProviderId, string> = {
   qwen: "qwen3-tts-flash",
-  minimax: "speech-2.8-turbo",
+  minimax: "speech-2.8-hd",
   mimo: "mimo-v2.5-tts",
   gemini: "gemini-3.1-flash-tts-preview",
   openai: "gpt-4o-mini-tts",
@@ -122,8 +122,8 @@ export const SAY_IT_RIGHT_TTS_MODELS: Record<SayItRightProviderId, ModelEntry[]>
     { id: "qwen3-tts-instruct-flash", title: "Qwen3 TTS Instruct Flash" },
   ],
   minimax: [
-    { id: "speech-2.8-turbo", title: "Speech 2.8 Turbo" },
     { id: "speech-2.8-hd", title: "Speech 2.8 HD" },
+    { id: "speech-2.8-turbo", title: "Speech 2.8 Turbo" },
   ],
   mimo: [{ id: "mimo-v2.5-tts", title: "MiMo V2.5 TTS" }],
   gemini: [{ id: "gemini-3.1-flash-tts-preview", title: "Gemini 3.1 Flash TTS Preview" }],

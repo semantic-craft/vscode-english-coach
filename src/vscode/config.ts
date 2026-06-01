@@ -142,7 +142,7 @@ export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TT
     mimoVoice: c.get<string>("tts.mimoVoice") ?? "Chloe",
     minimaxApiKey: (await getSpeechSecret(context, "minimax")) || (await getSecret(context, "minimax")) || "",
     minimaxBaseURL: c.get<string>("tts.minimaxBaseURL") ?? "https://api.minimaxi.com/v1",
-    minimaxModel: c.get<string>("tts.minimaxModel") ?? "speech-2.8-turbo",
+    minimaxModel: c.get<string>("tts.minimaxModel") ?? "speech-2.8-hd",
     minimaxVoiceId: c.get<string>("tts.minimaxVoiceId") ?? "English_expressive_narrator",
   };
 }

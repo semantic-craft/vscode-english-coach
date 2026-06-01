@@ -44,7 +44,7 @@ const MIMO_TTS_DEFAULT_MODEL = "mimo-v2.5-tts";
 const MIMO_TTS_DEFAULT_VOICE = "Chloe";
 
 const MINIMAX_TTS_DEFAULT_BASE_URL = "https://api.minimaxi.com/v1";
-const MINIMAX_TTS_DEFAULT_MODEL = "speech-2.8-turbo";
+const MINIMAX_TTS_DEFAULT_MODEL = "speech-2.8-hd";
 const MINIMAX_TTS_DEFAULT_VOICE = "English_expressive_narrator";
 
 const PCM_CHANNELS = 1;

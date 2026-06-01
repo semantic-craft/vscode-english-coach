@@ -1,5 +1,9 @@
 # Say It Right Changelog
 
+## [0.4.11] - 2026-06-01
+
+- Switched the built-in MiniMax speech default to `speech-2.8-hd` while keeping MiniMax text analysis on `MiniMax-M3` by default.
+
 ## [0.4.10] - 2026-06-01
 
 - Exposed MiniMax analysis model choices in both Coach and Say It Right settings: `MiniMax-M3` remains the default, with `MiniMax-M2.7-highspeed` available as the previous fast option.

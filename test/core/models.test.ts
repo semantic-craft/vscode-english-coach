@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS,
+  DEFAULT_SAY_IT_RIGHT_TTS_MODELS,
   SAY_IT_RIGHT_TTS_MODELS,
   DEFAULT_TTS_VOICES,
   SAY_IT_RIGHT_ANALYSIS_MODELS,
@@ -65,13 +66,14 @@ describe("resolveModel", () => {
     ]);
     expect(SAY_IT_RIGHT_ANALYSIS_MODELS.gemini.some((m) => m.id.includes("gemini-2.5"))).toBe(false);
     expect(SAY_IT_RIGHT_ANALYSIS_MODELS.openai.map((m) => m.id)).toEqual(["gpt-5.5"]);
-    expect(SAY_IT_RIGHT_TTS_MODELS.minimax.map((m) => m.id)).toEqual(["speech-2.8-turbo", "speech-2.8-hd"]);
+    expect(SAY_IT_RIGHT_TTS_MODELS.minimax.map((m) => m.id)).toEqual(["speech-2.8-hd", "speech-2.8-turbo"]);
     expect(SAY_IT_RIGHT_TTS_MODELS.minimax.map((m) => m.id)).not.toContain("MiniMax-M2.7-highspeed");
     expect(SAY_IT_RIGHT_TTS_MODELS.gemini.some((m) => m.id.includes("gemini-2.5"))).toBe(false);
   });
   it("uses current pronunciation defaults", () => {
     expect(DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS.qwen).toBe("qwen3.6-flash");
     expect(DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS.minimax).toBe("MiniMax-M3");
+    expect(DEFAULT_SAY_IT_RIGHT_TTS_MODELS.minimax).toBe("speech-2.8-hd");
     expect(DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS.openai).toBe("gpt-5.5");
     expect(DEFAULT_TTS_VOICES.minimax).toBe("English_expressive_narrator");
     expect(TTS_VOICES.minimax).not.toContain("male-qn-qingse");
