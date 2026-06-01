@@ -161,7 +161,7 @@ describe("synthesize", () => {
       "hi",
       ttsConfig({
         provider: "minimax",
-        minimaxApiKey: "k",
+        minimaxApiKey: "Bearer k",
         minimaxModel: "speech-2.8-hd",
         minimaxVoiceId: "English_WiseScholar",
       }),
@@ -169,8 +169,10 @@ describe("synthesize", () => {
     expect(buffers).toHaveLength(1);
     expect(buffers[0].length).toBe(4);
     const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Record<string, string>;
     const body = JSON.parse(String(init?.body));
     expect(url).toBe("https://api.minimaxi.com/v1/t2a_v2");
+    expect(headers.Authorization).toBe("Bearer k");
     expect(body.model).toBe("speech-2.8-hd");
     expect(body.voice_setting.voice_id).toBe("English_WiseScholar");
     expect(body.audio_setting).toMatchObject({ sample_rate: 32000, bitrate: 128000, format: "mp3", channel: 1 });

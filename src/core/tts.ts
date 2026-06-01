@@ -220,7 +220,7 @@ function isMimoPayAsYouGoBaseURL(baseURL: string): boolean {
 }
 
 async function synthesizeWithMinimax(text: string, config: TTSConfig, signal?: AbortSignal): Promise<Buffer> {
-  const apiKey = config.minimaxApiKey.trim();
+  const apiKey = normalizeBearerApiKey(config.minimaxApiKey);
   if (!apiKey) throw new Error("Add a MiniMax API key to use MiniMax read-aloud.");
   const base = (config.minimaxBaseURL.trim() || MINIMAX_TTS_DEFAULT_BASE_URL).replace(/\/+$/, "");
   const url = base.endsWith("/t2a_v2") ? base : `${base}/t2a_v2`;
@@ -251,6 +251,10 @@ async function synthesizeWithMinimax(text: string, config: TTSConfig, signal?: A
   const hex = data.data?.audio;
   if (!hex) throw new Error("MiniMax TTS returned no audio.");
   return Buffer.from(hex, "hex");
+}
+
+function normalizeBearerApiKey(apiKey: string): string {
+  return apiKey.trim().replace(/^Bearer\s+/i, "").trim();
 }
 
 async function fetchUrlAsBase64(url: string | undefined, signal?: AbortSignal): Promise<string | undefined> {
