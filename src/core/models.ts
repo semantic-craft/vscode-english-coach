@@ -42,11 +42,9 @@ const MODEL_CATALOG: Record<ProviderId, ProviderModels> = {
     all: [{ id: "gemini-3.5-flash", title: "Gemini 3.5 Flash" }],
   },
   minimax: {
-    fast: { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
-    pro: { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
-    all: [
-      { id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" },
-    ],
+    fast: { id: "MiniMax-M3", title: "M3" },
+    pro: { id: "MiniMax-M3", title: "M3" },
+    all: [{ id: "MiniMax-M3", title: "M3" }],
   },
   openai: {
     fast: { id: "gpt-5.5", title: "GPT-5.5" },
@@ -84,7 +82,7 @@ export type SayItRightProviderId = (typeof SAY_IT_RIGHT_PROVIDER_IDS)[number];
 
 export const DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS: Record<SayItRightProviderId, string> = {
   qwen: "qwen3.6-flash",
-  minimax: "MiniMax-M2.7-highspeed",
+  minimax: "MiniMax-M3",
   mimo: "mimo-v2.5",
   gemini: "gemini-3.5-flash",
   openai: "gpt-5.5",
@@ -95,7 +93,7 @@ export const SAY_IT_RIGHT_ANALYSIS_MODELS: Record<SayItRightProviderId, ModelEnt
     { id: "qwen3.6-flash", title: "Qwen 3.6 Flash" },
     { id: "qwen3.6-plus", title: "Qwen 3.6 Plus" },
   ],
-  minimax: [{ id: "MiniMax-M2.7-highspeed", title: "M2.7 High-Speed" }],
+  minimax: [{ id: "MiniMax-M3", title: "M3" }],
   mimo: [
     { id: "mimo-v2.5-pro", title: "V2.5 Pro" },
     { id: "mimo-v2.5", title: "V2.5" },

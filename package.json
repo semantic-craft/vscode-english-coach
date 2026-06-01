@@ -2,7 +2,7 @@
   "name": "vscode-say-it-right",
   "displayName": "Say It Right",
   "description": "Practice English pronunciation in VS Code with stress, intonation, rhythm, linking, IPA, shadowing loops, and model speech.",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "keywords": [
     "english",
     "pronunciation",
@@ -293,9 +293,9 @@
         "englishCoach.minimax.model": {
           "type": "string",
           "enum": [
-            "MiniMax-M2.7-highspeed"
+            "MiniMax-M3"
           ],
-          "default": "MiniMax-M2.7-highspeed"
+          "default": "MiniMax-M3"
         },
         "englishCoach.openai.enabled": {
           "type": "boolean",
@@ -441,9 +441,9 @@
         "sayItRight.analysisModel.minimax": {
           "type": "string",
           "enum": [
-            "MiniMax-M2.7-highspeed"
+            "MiniMax-M3"
           ],
-          "default": "MiniMax-M2.7-highspeed",
+          "default": "MiniMax-M3",
           "description": "MiniMax model used for pronunciation analysis."
         },
         "sayItRight.analysisModel.mimo": {

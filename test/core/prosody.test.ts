@@ -281,7 +281,7 @@ describe("analyzeProsody", () => {
   it("retries without the full schema when a provider returns the schema instead of an analysis", async () => {
     const schemaEcho = JSON.stringify(PROSODY_SCHEMA);
     const spy = vi.spyOn(providers, "generateWithProvider").mockResolvedValueOnce(schemaEcho).mockResolvedValueOnce(sample);
-    const cfg = { id: "minimax", title: "MiniMax", model: "MiniMax-M2.7-highspeed", apiKey: "k", baseURL: "b", apiProtocol: "anthropic" } as any;
+    const cfg = { id: "minimax", title: "MiniMax", model: "MiniMax-M3", apiKey: "k", baseURL: "b", apiProtocol: "anthropic" } as any;
     const result = await analyzeProsody("Go.", cfg, 1000, 2048);
     expect(result.text).toBe("Go.");
     expect(spy).toHaveBeenCalledTimes(2);
@@ -295,7 +295,7 @@ describe("analyzeProsody", () => {
     ["qwen", "Qwen", "qwen3.6-flash", "openai", true],
     ["gemini", "Gemini", "gemini-3.5-flash", "openai", true],
     ["mimo", "MiMo", "mimo-v2.5-pro", "openai", true],
-    ["minimax", "MiniMax", "MiniMax-M2.7-highspeed", "anthropic", false],
+    ["minimax", "MiniMax", "MiniMax-M3", "anthropic", false],
   ])("runs %s analysis through the same everyday-English normalization", async (id, title, model, apiProtocol, sendsSchema) => {
     const raw = JSON.stringify({
       text: "Can you read it again?",

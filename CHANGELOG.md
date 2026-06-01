@@ -1,6 +1,6 @@
 # Say It Right Changelog
 
-## Unreleased
+## [0.4.9] - 2026-06-01
 
 - Clarified the Coach sidebar input and result copy per mode so Native English no longer looks like an English-only rewrite field.
 - Added direct Native English and Translate action buttons in the Coach sidebar.
@@ -10,6 +10,7 @@
 - Kept Qwen Token Plan and DashScope API keys separate so Coach/analysis keys are no longer reused for Qwen TTS.
 - Limited Qwen text model choices to `qwen3.6-flash` and `qwen3.6-plus`.
 - Restricted Gemini Coach text model choices to `gemini-3.5-flash`.
+- Updated built-in MiniMax analysis support to `MiniMax-M3` on the recommended Anthropic-compatible endpoint while keeping MiniMax TTS on T2A.
 
 ## [0.4.6] - 2026-05-31
 

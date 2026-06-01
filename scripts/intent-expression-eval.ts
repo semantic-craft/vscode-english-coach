@@ -369,8 +369,8 @@ function resolveProviderConfig(): ProviderConfig {
     },
     minimax: {
       title: "MiniMax",
-      baseURL: process.env.MINIMAX_BASE_URL || "https://api.minimaxi.com/v1",
-      model: process.env.INTENT_EVAL_MODEL || "MiniMax-M2.7-highspeed",
+      baseURL: process.env.MINIMAX_BASE_URL || "https://api.minimaxi.com/anthropic",
+      model: process.env.INTENT_EVAL_MODEL || "MiniMax-M3",
       keyEnv: ["INTENT_EVAL_API_KEY", "MINIMAX_API_KEY", "MINIMAX_CN_API_KEY"],
     },
     qwen: {

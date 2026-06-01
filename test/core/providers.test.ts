@@ -319,7 +319,7 @@ describe("generateWithProvider (Anthropic protocol)", () => {
       title: "MiniMax",
       apiKey: "mini-test",
       baseURL: "https://api.minimaxi.com/anthropic",
-      model: "MiniMax-M2.7-highspeed",
+      model: "MiniMax-M3",
       apiProtocol: "anthropic",
     };
     await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);

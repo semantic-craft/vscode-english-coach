@@ -617,7 +617,7 @@ function needsPromptEmbeddedSchema(config: ProviderConfig, options: GenerationOp
 }
 
 /**
- * DeepSeek v4, MiniMax M2.7, and MiMo v2.5 can emit thinking/reasoning, which adds
+ * DeepSeek v4, MiniMax M3, and MiMo v2.5 can emit thinking/reasoning, which adds
  * first-token latency and silently ignores `temperature`. Translation is
  * latency-sensitive and benefits from temperature control, so we explicitly
  * disable thinking by default for every Anthropic-compatible request. When
