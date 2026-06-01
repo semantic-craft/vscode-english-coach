@@ -20,7 +20,7 @@ describe("extension manifest provider defaults", () => {
     expect(properties["englishCoach.qwen.model"].enum).toEqual(["qwen3.6-flash", "qwen3.6-plus"]);
     expect(properties["englishCoach.qwen.model"].default).toBe("qwen3.6-flash");
     expect(properties["englishCoach.gemini.model"].enum).toEqual(["gemini-3.5-flash"]);
-    expect(properties["englishCoach.minimax.model"].enum).toEqual(["MiniMax-M3"]);
+    expect(properties["englishCoach.minimax.model"].enum).toEqual(["MiniMax-M3", "MiniMax-M2.7-highspeed"]);
     expect(properties["englishCoach.mimo.baseURL"].default).toBe("https://token-plan-cn.xiaomimimo.com/anthropic");
     expect(properties["englishCoach.mimo.model"].default).toBe("mimo-v2.5");
     expect(properties["englishCoach.openai.model"].enum).toEqual(["gpt-5.5"]);
@@ -31,12 +31,16 @@ describe("extension manifest provider defaults", () => {
     expect(properties["sayItRight.analysisProvider"].enum).toEqual(expect.arrayContaining(["minimax", "mimo"]));
     expect(properties["sayItRight.speechProvider"].enum).toEqual(expect.arrayContaining(["minimax", "mimo"]));
     expect(properties["sayItRight.analysisModel.qwen"].enum).toEqual(["qwen3.6-flash", "qwen3.6-plus"]);
-    expect(properties["sayItRight.analysisModel.minimax"].enum).toEqual(["MiniMax-M3"]);
+    expect(properties["sayItRight.analysisModel.minimax"].enum).toEqual([
+      "MiniMax-M3",
+      "MiniMax-M2.7-highspeed",
+    ]);
     expect(properties["sayItRight.analysisModel.mimo"].enum).toContain("mimo-v2.5-pro");
     expect(properties["sayItRight.analysisModel.gemini"].enum).toEqual(["gemini-3.5-flash"]);
     expect(properties["sayItRight.analysisModel.openai"].enum).toEqual(["gpt-5.5"]);
     expect(properties["sayItRight.analysisModel.openai"].default).toBe("gpt-5.5");
-    expect(properties["sayItRight.ttsModel.minimax"].enum).toContain("speech-2.8-turbo");
+    expect(properties["sayItRight.ttsModel.minimax"].enum).toEqual(["speech-2.8-turbo", "speech-2.8-hd"]);
+    expect(properties["sayItRight.ttsModel.minimax"].enum).not.toContain("MiniMax-M2.7-highspeed");
     expect(properties["sayItRight.ttsModel.mimo"].enum).toContain("mimo-v2.5-tts");
     expect(properties["sayItRight.ttsModel.gemini"].enum).toEqual(["gemini-3.1-flash-tts-preview"]);
     expect(properties["sayItRight.voice.minimax"].enum).toContain("English_expressive_narrator");

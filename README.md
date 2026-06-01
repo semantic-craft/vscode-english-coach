@@ -59,7 +59,7 @@ API key 存在 VS Code SecretStorage（系统钥匙串），不会写进 setting
 | Provider                    | 用途                   | 默认模型 / 声音                                                               |
 | --------------------------- | ---------------------- | ----------------------------------------------------------------------------- |
 | Qwen / 通义千问             | 发音分析 + 教练 + 朗读 | `qwen3.6-flash` / `qwen3.6-plus` (Token Plan) / `qwen3-tts-flash` (DashScope) / `Jennifer` |
-| MiniMax / 海螺              | 发音分析 + 教练 + 朗读 | `MiniMax-M3` / `speech-2.8-turbo` / `English_expressive_narrator`             |
+| MiniMax / 海螺              | 发音分析 + 教练 + 朗读 | `MiniMax-M3` or `MiniMax-M2.7-highspeed` / `speech-2.8-turbo` / `English_expressive_narrator` |
 | 小米 MiMo                   | 发音分析 + 教练 + 朗读 | `mimo-v2.5` / `mimo-v2.5-tts` / `Chloe`                                       |
 | Gemini                      | 发音分析 + 教练 + 朗读 | `gemini-3.5-flash` / `gemini-3.1-flash-tts-preview` / `Charon`                |
 | OpenAI / GPT                | 发音分析 + 教练 + TTS  | `gpt-5.5` / `gpt-4o-mini-tts` / `marin`                                       |

@@ -1,5 +1,9 @@
 # Say It Right Changelog
 
+## [0.4.10] - 2026-06-01
+
+- Exposed MiniMax analysis model choices in both Coach and Say It Right settings: `MiniMax-M3` remains the default, with `MiniMax-M2.7-highspeed` available as the previous fast option.
+
 ## [0.4.9] - 2026-06-01
 
 - Clarified the Coach sidebar input and result copy per mode so Native English no longer looks like an English-only rewrite field.
