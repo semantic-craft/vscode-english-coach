@@ -19,7 +19,7 @@ export const PROSODY_SCHEMA: Record<string, unknown> = {
         additionalProperties: false,
         required: ["tone", "words"],
         properties: {
-          tone: { type: "string", enum: ["fall", "rise", "fall-rise", "rise-fall", "level"] },
+          tone: { type: "string", enum: ["fall", "rise", "level"] },
           words: {
             type: "array",
             items: {

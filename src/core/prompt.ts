@@ -156,11 +156,12 @@ export const PRONUNCIATION_FEEDBACK_SCHEMA: Record<string, unknown> = {
 };
 
 const teacherSpeechBaseInstructions = [
+  "This audio will be used for shadowing practice, so prioritize natural spoken delivery over document-style narration.",
   "Read the text exactly as written for an adult learner who will shadow the audio.",
   "Do not translate, paraphrase, explain, add examples, add greetings, or read these instructions aloud.",
   "Use neutral General American pronunciation for English.",
   "If the text mixes Chinese and English, keep each language as written: pronounce Chinese naturally and embedded English in General American.",
-  "Use a slightly slower teacher pace while keeping natural rhythm and connected speech.",
+  "Use short, natural breath groups where the text allows, and keep the pacing slightly slower than everyday speech.",
   "Make stressed syllables a little clearer, but do not sound robotic or theatrical.",
 ];
 

@@ -56,9 +56,11 @@ describe("buildNativeEnglishExpressionPrompt", () => {
 describe("speech prompt builders", () => {
   it("builds exact-text teacher speech instructions for mixed Chinese and English", () => {
     const instructions = buildTeacherSpeechInstructions("Keep a calm voice.");
+    expect(instructions).toContain("shadowing practice");
     expect(instructions).toContain("Read the text exactly as written");
     expect(instructions).toContain("Do not translate");
     expect(instructions).toContain("General American");
+    expect(instructions).toContain("short, natural breath groups");
     expect(instructions).toContain("mixes Chinese and English");
     expect(instructions).toContain("Keep a calm voice.");
   });

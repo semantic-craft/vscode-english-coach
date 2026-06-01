@@ -19,6 +19,11 @@ describe("buildProsodyPrompt", () => {
     expect(user).toContain("Why does my Dropbox keep syncing the files?");
   });
 
+  it("keeps the structured tone contract aligned with the learner-facing prompt", () => {
+    const tone = (((PROSODY_SCHEMA.properties as any).thoughtGroups.items.properties as any).tone.enum ?? []) as string[];
+    expect(tone).toEqual(["fall", "rise", "level"]);
+  });
+
   it("asks single-word analysis to generate one everyday example sentence", () => {
     const { user } = buildProsodyPrompt("sync", true);
     expect(user).toContain("Input kind: single selected word");
