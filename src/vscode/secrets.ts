@@ -73,7 +73,7 @@ function keyKindOptions(id: SecretKeyId): KindPick[] {
         keyKind: "chat",
       },
       {
-        label: "Speech / TTS key (DashScope)",
+        label: "Qwen DashScope key (Speech/TTS)",
         detail: "Required for Qwen read-aloud; it does not fall back to the Token Plan key.",
         keyKind: "speech",
       },

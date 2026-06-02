@@ -329,7 +329,7 @@
         "englishCoach.tts.qwenBaseURL": {
           "type": "string",
           "default": "https://dashscope.aliyuncs.com/api/v1",
-          "description": "DashScope base URL for Qwen TTS. Requires the separate Qwen Speech/TTS key, not the Qwen Token Plan analysis key."
+          "description": "DashScope base URL for Qwen TTS. Requires the separate Qwen DashScope key (Speech/TTS), not the Qwen Token Plan analysis key."
         },
         "englishCoach.tts.qwenInstructions": {
           "type": "string",

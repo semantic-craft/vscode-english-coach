@@ -98,11 +98,11 @@ describe("extension manifest provider defaults", () => {
     expect(config).toContain('dashscopeApiKey: (await getSpeechSecret(context, "qwen")) || ""');
     expect(config).toContain('provider === "qwen" ? "" : base.apiKey');
     expect(secrets).toContain("Coach / Analysis key (Token Plan)");
-    expect(secrets).toContain("Speech / TTS key (DashScope)");
+    expect(secrets).toContain("Qwen DashScope key (Speech/TTS)");
     expect(secrets).toContain("does not fall back to the Token Plan key");
     expect(sidebarScript).toContain('kind: "chat"');
     expect(playerScript).toContain('kind: "speech"');
-    expect(tts).toContain("Qwen Speech/TTS key (DashScope)");
-    expect(properties["englishCoach.tts.qwenBaseURL"].description).toContain("separate Qwen Speech/TTS key");
+    expect(tts).toContain("Qwen DashScope key (Speech/TTS)");
+    expect(properties["englishCoach.tts.qwenBaseURL"].description).toContain("separate Qwen DashScope key (Speech/TTS)");
   });
 });

@@ -115,7 +115,7 @@ async function synthesizeWithQwen(
   signal?: AbortSignal,
 ): Promise<Buffer> {
   const apiKey = config.dashscopeApiKey.trim();
-  if (!apiKey) throw new Error("Add a Qwen Speech/TTS key (DashScope) to use Qwen read-aloud.");
+  if (!apiKey) throw new Error("Add a Qwen DashScope key (Speech/TTS) to use Qwen read-aloud.");
   const model = config.qwenModel === QWEN_TTS_INSTRUCT_MODEL ? QWEN_TTS_INSTRUCT_MODEL : QWEN_TTS_DEFAULT_MODEL;
   const voice = config.qwenVoice.trim() || QWEN_TTS_DEFAULT_VOICE;
   const languageType = config.qwenLanguageType.trim() || "Auto";
