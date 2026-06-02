@@ -26,7 +26,7 @@
 - switch provider / analysis model / speech model / voice directly in the player,
 - **export** the model audio.
 
-默认使用 Qwen (`qwen3.6-flash` analysis，可切 `qwen3.6-plus`；`qwen3-tts(-instruct)-flash` voice)。也可以在播放器顶部直接切到 MiniMax、MiMo、Gemini 或 OpenAI，并选择 analysis model、TTS model 和 voice；这些选择会同步写入 `sayItRight.*` 设置。
+默认使用 Qwen (`qwen3.6-flash` analysis，可切 `qwen3.7-plus` / `qwen3.7-max`；`qwen3-tts(-instruct)-flash` voice)。也可以在播放器顶部直接切到 MiniMax、MiMo、Gemini 或 OpenAI，并选择 analysis model、TTS model 和 voice；这些选择会同步写入 `sayItRight.*` 设置。
 
 发音图会先让模型给出 IPA、重音、弱读、thought group 和语调，再经过一层规则校正：function words 通常弱读，content words 和短语动词小品词通常重读，nuclear stress 放在自然的最后内容焦点，陈述句/wh-question 句末多为 fall，yes/no 或礼貌请求句末多为 rise。这样 Qwen、Gemini、MiniMax、MiMo 即使原始 JSON 分组不稳，也不会把 `Could you`、`and` 这类弱词乱标成重音中心。
 
@@ -58,7 +58,7 @@ API key 存在 VS Code SecretStorage（系统钥匙串），不会写进 setting
 
 | Provider                    | 用途                   | 默认模型 / 声音                                                               |
 | --------------------------- | ---------------------- | ----------------------------------------------------------------------------- |
-| Qwen / 通义千问             | 发音分析 + 教练 + 朗读 | `qwen3.6-flash` / `qwen3.6-plus` (Token Plan) / `qwen3-tts-flash` (DashScope) / `Jennifer` |
+| Qwen / 通义千问             | 发音分析 + 教练 + 朗读 | `qwen3.6-flash` / `qwen3.7-plus` / `qwen3.7-max` (Token Plan) / `qwen3-tts-flash` (DashScope) / `Jennifer` |
 | MiniMax / 海螺              | 发音分析 + 教练 + 朗读 | `MiniMax-M3` or `MiniMax-M2.7-highspeed` / `speech-2.8-hd` / `English_expressive_narrator` |
 | 小米 MiMo                   | 发音分析 + 教练 + 朗读 | `mimo-v2.5` / `mimo-v2.5-tts` / `Chloe`                                       |
 | Gemini                      | 发音分析 + 教练 + 朗读 | `gemini-3.5-flash` / `gemini-3.1-flash-tts-preview` / `Charon`                |

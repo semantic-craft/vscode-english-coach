@@ -1,5 +1,9 @@
 # Say It Right Changelog
 
+## [0.4.14] - 2026-06-02
+
+- Updated Qwen Coach and pronunciation-analysis model choices from `qwen3.6-plus` to `qwen3.7-plus`, while keeping `qwen3.7-max` parallel and `qwen3.6-flash` as the fast option.
+
 ## [0.4.13] - 2026-06-02
 
 - Added SkillOpt-style validation gates to translation, native-expression, rewrite-coach, pronunciation-feedback, and prosody prompts so model output is checked for fidelity, anti-invention, speakability, schema correctness, and learner usefulness before responding.
@@ -21,7 +25,7 @@
 - Wrapped long pronunciation staves into multiple visual lines to keep word labels, IPA, and pitch curves readable.
 - Switched Qwen Coach and pronunciation-analysis defaults to Bailian Token Plan's Anthropic-compatible endpoint.
 - Kept Qwen Token Plan and DashScope API keys separate so Coach/analysis keys are no longer reused for Qwen TTS.
-- Limited Qwen text model choices to `qwen3.6-flash` and `qwen3.6-plus`.
+- Limited Qwen text model choices to `qwen3.6-flash`, `qwen3.7-plus`, and `qwen3.7-max`.
 - Restricted Gemini Coach text model choices to `gemini-3.5-flash`.
 - Updated built-in MiniMax analysis support to `MiniMax-M3` on the recommended Anthropic-compatible endpoint while keeping MiniMax TTS on T2A.
 

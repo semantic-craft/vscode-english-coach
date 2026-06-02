@@ -14,10 +14,11 @@ interface ProviderModels {
 const MODEL_CATALOG: Record<ProviderId, ProviderModels> = {
   qwen: {
     fast: { id: "qwen3.6-flash", title: "Qwen 3.6 Flash" },
-    pro: { id: "qwen3.6-plus", title: "Qwen 3.6 Plus" },
+    pro: { id: "qwen3.7-plus", title: "Qwen 3.7 Plus" },
     all: [
       { id: "qwen3.6-flash", title: "Qwen 3.6 Flash" },
-      { id: "qwen3.6-plus", title: "Qwen 3.6 Plus" },
+      { id: "qwen3.7-plus", title: "Qwen 3.7 Plus" },
+      { id: "qwen3.7-max", title: "Qwen 3.7 Max" },
     ],
   },
   deepseek: {
@@ -94,7 +95,8 @@ export const DEFAULT_SAY_IT_RIGHT_ANALYSIS_MODELS: Record<SayItRightProviderId, 
 export const SAY_IT_RIGHT_ANALYSIS_MODELS: Record<SayItRightProviderId, ModelEntry[]> = {
   qwen: [
     { id: "qwen3.6-flash", title: "Qwen 3.6 Flash" },
-    { id: "qwen3.6-plus", title: "Qwen 3.6 Plus" },
+    { id: "qwen3.7-plus", title: "Qwen 3.7 Plus" },
+    { id: "qwen3.7-max", title: "Qwen 3.7 Max" },
   ],
   minimax: [
     { id: "MiniMax-M3", title: "M3" },

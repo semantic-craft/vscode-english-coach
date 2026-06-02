@@ -21,7 +21,7 @@ describe("resolveModel", () => {
   });
   it("resolves Qwen models", () => {
     expect(resolveModel("qwen", "fast", "")).toBe("qwen3.6-flash");
-    expect(resolveModel("qwen", "pro", "")).toBe("qwen3.6-plus");
+    expect(resolveModel("qwen", "pro", "")).toBe("qwen3.7-plus");
   });
   it("routes Gemini tiers to Gemini 3.5 Flash", () => {
     expect(resolveModel("gemini", "fast", "")).toBe("gemini-3.5-flash");
@@ -59,7 +59,11 @@ describe("resolveModel", () => {
     expect(SAY_IT_RIGHT_ANALYSIS_MODELS.qwen.map((m) => m.id)).not.toEqual(
       expect.arrayContaining(["qwen3.5-flash", "qwen-plus"]),
     );
-    expect(SAY_IT_RIGHT_ANALYSIS_MODELS.qwen.map((m) => m.id)).toEqual(["qwen3.6-flash", "qwen3.6-plus"]);
+    expect(SAY_IT_RIGHT_ANALYSIS_MODELS.qwen.map((m) => m.id)).toEqual([
+      "qwen3.6-flash",
+      "qwen3.7-plus",
+      "qwen3.7-max",
+    ]);
     expect(SAY_IT_RIGHT_ANALYSIS_MODELS.minimax.map((m) => m.id)).toEqual([
       "MiniMax-M3",
       "MiniMax-M2.7-highspeed",

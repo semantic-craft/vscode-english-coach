@@ -17,7 +17,7 @@ describe("extension manifest provider defaults", () => {
     expect(properties["englishCoach.qwen.baseURL"].default).toBe(
       "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
     );
-    expect(properties["englishCoach.qwen.model"].enum).toEqual(["qwen3.6-flash", "qwen3.6-plus"]);
+    expect(properties["englishCoach.qwen.model"].enum).toEqual(["qwen3.6-flash", "qwen3.7-plus", "qwen3.7-max"]);
     expect(properties["englishCoach.qwen.model"].default).toBe("qwen3.6-flash");
     expect(properties["englishCoach.gemini.model"].enum).toEqual(["gemini-3.5-flash"]);
     expect(properties["englishCoach.minimax.model"].enum).toEqual(["MiniMax-M3", "MiniMax-M2.7-highspeed"]);
@@ -30,7 +30,11 @@ describe("extension manifest provider defaults", () => {
   it("exposes analysis, speech model, and voice choices for MiniMax and MiMo", () => {
     expect(properties["sayItRight.analysisProvider"].enum).toEqual(expect.arrayContaining(["minimax", "mimo"]));
     expect(properties["sayItRight.speechProvider"].enum).toEqual(expect.arrayContaining(["minimax", "mimo"]));
-    expect(properties["sayItRight.analysisModel.qwen"].enum).toEqual(["qwen3.6-flash", "qwen3.6-plus"]);
+    expect(properties["sayItRight.analysisModel.qwen"].enum).toEqual([
+      "qwen3.6-flash",
+      "qwen3.7-plus",
+      "qwen3.7-max",
+    ]);
     expect(properties["sayItRight.analysisModel.minimax"].enum).toEqual([
       "MiniMax-M3",
       "MiniMax-M2.7-highspeed",

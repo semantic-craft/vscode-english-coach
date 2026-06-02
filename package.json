@@ -2,7 +2,7 @@
   "name": "vscode-say-it-right",
   "displayName": "Say It Right",
   "description": "Practice English pronunciation in VS Code with stress, intonation, rhythm, linking, IPA, shadowing loops, and model speech.",
-  "version": "0.4.13",
+  "version": "0.4.14",
   "keywords": [
     "english",
     "pronunciation",
@@ -235,7 +235,8 @@
           "type": "string",
           "enum": [
             "qwen3.6-flash",
-            "qwen3.6-plus"
+            "qwen3.7-plus",
+            "qwen3.7-max"
           ],
           "default": "qwen3.6-flash"
         },
@@ -434,7 +435,8 @@
           "type": "string",
           "enum": [
             "qwen3.6-flash",
-            "qwen3.6-plus"
+            "qwen3.7-plus",
+            "qwen3.7-max"
           ],
           "default": "qwen3.6-flash",
           "description": "Qwen model used for pronunciation analysis."
