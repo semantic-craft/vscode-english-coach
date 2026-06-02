@@ -1,5 +1,9 @@
 # Say It Right Changelog
 
+## [0.4.16] - 2026-06-02
+
+- Tightened rewrite and native-English-expression prompts against MiniMax-style prompt best practices: the final English is now explicitly plain, speakable text for real messages or shadowing/TTS, while Chinese coaching notes stay separate as UI metadata.
+
 ## [0.4.14] - 2026-06-02
 
 - Updated Qwen Coach and pronunciation-analysis model choices from `qwen3.6-plus` to `qwen3.7-plus`, while keeping `qwen3.7-max` parallel and `qwen3.6-flash` as the fast option.

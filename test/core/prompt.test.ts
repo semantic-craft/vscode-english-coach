@@ -38,7 +38,11 @@ describe("buildRewriteCoachPrompt", () => {
     expect(system).toContain("why");
     expect(system).toContain("communicative job");
     expect(system).toContain("make only minimal edits");
+    expect(system).toContain("The rewritten field may be pasted into a real message");
+    expect(system).toContain("Use plain English text only for rewritten");
+    expect(system).toContain("one or two short natural sentences");
     expect(system).toContain("native-English gate");
+    expect(system).toContain("plain-speech gate");
     expect(system).toContain("schema gate");
   });
 });
@@ -56,6 +60,9 @@ describe("buildNativeEnglishExpressionPrompt", () => {
     expect(system).toContain("rewritten");
     expect(system).toContain("fidelity gate");
     expect(system).toContain("anti-invention gate");
+    expect(system).toContain("The rewritten field may be pasted into a real message");
+    expect(system).toContain("The why field is coaching metadata");
+    expect(system).toContain("plain-speech gate");
   });
 });
 
