@@ -7,7 +7,6 @@ const SECRET_PREFIX = "englishCoach.secret.";
 
 const SECRET_LABELS: Record<SecretKeyId, string> = {
   qwen: "Qwen",
-  minimax: "MiniMax",
   deepseek: "DeepSeek",
   mimo: "Xiaomi MiMo",
   gemini: "Gemini",

@@ -20,35 +20,32 @@ describe("extension manifest provider defaults", () => {
     expect(properties["englishCoach.qwen.model"].enum).toEqual(["qwen3.6-flash", "qwen3.7-plus", "qwen3.7-max"]);
     expect(properties["englishCoach.qwen.model"].default).toBe("qwen3.6-flash");
     expect(properties["englishCoach.gemini.model"].enum).toEqual(["gemini-3.5-flash"]);
-    expect(properties["englishCoach.minimax.model"].enum).toEqual(["MiniMax-M3", "MiniMax-M2.7-highspeed"]);
+    expect(properties["englishCoach.minimax.model"]).toBeUndefined();
     expect(properties["englishCoach.mimo.baseURL"].default).toBe("https://token-plan-cn.xiaomimimo.com/anthropic");
     expect(properties["englishCoach.mimo.model"].default).toBe("mimo-v2.5");
     expect(properties["englishCoach.openai.model"].enum).toEqual(["gpt-5.5"]);
     expect(properties["englishCoach.openai.model"].default).toBe("gpt-5.5");
   });
 
-  it("exposes analysis, speech model, and voice choices for MiniMax and MiMo", () => {
-    expect(properties["sayItRight.analysisProvider"].enum).toEqual(expect.arrayContaining(["minimax", "mimo"]));
-    expect(properties["sayItRight.speechProvider"].enum).toEqual(expect.arrayContaining(["minimax", "mimo"]));
+  it("exposes active analysis, speech model, and voice choices without MiniMax", () => {
+    expect(properties["sayItRight.analysisProvider"].enum).toEqual(expect.arrayContaining(["qwen", "mimo", "gemini", "openai"]));
+    expect(properties["sayItRight.analysisProvider"].enum).not.toContain("minimax");
+    expect(properties["sayItRight.speechProvider"].enum).toEqual(expect.arrayContaining(["qwen", "mimo", "gemini"]));
+    expect(properties["sayItRight.speechProvider"].enum).not.toContain("minimax");
     expect(properties["sayItRight.analysisModel.qwen"].enum).toEqual([
       "qwen3.6-flash",
       "qwen3.7-plus",
       "qwen3.7-max",
     ]);
-    expect(properties["sayItRight.analysisModel.minimax"].enum).toEqual([
-      "MiniMax-M3",
-      "MiniMax-M2.7-highspeed",
-    ]);
+    expect(properties["sayItRight.analysisModel.minimax"]).toBeUndefined();
     expect(properties["sayItRight.analysisModel.mimo"].enum).toContain("mimo-v2.5-pro");
     expect(properties["sayItRight.analysisModel.gemini"].enum).toEqual(["gemini-3.5-flash"]);
     expect(properties["sayItRight.analysisModel.openai"].enum).toEqual(["gpt-5.5"]);
     expect(properties["sayItRight.analysisModel.openai"].default).toBe("gpt-5.5");
-    expect(properties["sayItRight.ttsModel.minimax"].enum).toEqual(["speech-2.8-hd", "speech-2.8-turbo"]);
-    expect(properties["sayItRight.ttsModel.minimax"].default).toBe("speech-2.8-hd");
-    expect(properties["sayItRight.ttsModel.minimax"].enum).not.toContain("MiniMax-M2.7-highspeed");
+    expect(properties["sayItRight.ttsModel.minimax"]).toBeUndefined();
     expect(properties["sayItRight.ttsModel.mimo"].enum).toContain("mimo-v2.5-tts");
     expect(properties["sayItRight.ttsModel.gemini"].enum).toEqual(["gemini-3.1-flash-tts-preview"]);
-    expect(properties["sayItRight.voice.minimax"].enum).toContain("English_expressive_narrator");
+    expect(properties["sayItRight.voice.minimax"]).toBeUndefined();
     expect(properties["sayItRight.voice.mimo"].enum).toEqual(expect.arrayContaining(["Chloe", "Mia", "Milo", "Dean"]));
   });
 

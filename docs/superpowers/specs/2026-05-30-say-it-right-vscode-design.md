@@ -45,7 +45,7 @@ interactive **webview** and the **current** (verified 2026-05-30) Qwen and OpenA
 6. **Record yourself** with an in-extension 🎙 button (no browser), then compare your take to
    the model and get AI text feedback; **export** both the model audio and your recording.
 7. **Bring-your-own-key (BYOK)**, reusing English Coach's provider set (Qwen / DeepSeek /
-   MiniMax / MiMo / Gemini / OpenAI), one provider at a time, switchable.
+   MiMo / Gemini / OpenAI), one provider at a time, switchable.
 8. Light integration with English Coach concepts: send a sentence to idiomatic "Coach"
    explanation; star a sentence to a review list. (Optional, additive.)
 
@@ -175,7 +175,7 @@ Each: what it does / used by / depends on.
 
 ### core/tts.ts (extended from English Coach)
 - **Does:** `synthesize(text, {provider, voice, instructions?, format})` -> audio Buffer.
-  Keeps Qwen/Gemini/MiMo/MiniMax; **adds OpenAI `/v1/audio/speech`** (`gpt-4o-mini-tts`,
+  Keeps Qwen/Gemini/MiMo; **adds OpenAI `/v1/audio/speech`** (`gpt-4o-mini-tts`,
   voices incl. `marin`/`cedar`, `instructions`, `speed`) and threads a steerable
   `instructions` string for Qwen `qwen3-tts-instruct-flash` and OpenAI.
 - **Used by:** panel (model reading, teacher mode). **Depends on:** `fetch`, config.
@@ -268,7 +268,7 @@ models:
 
 - Endpoints: Qwen OpenAI-compatible `https://dashscope.aliyuncs.com/compatible-mode/v1`;
   Qwen TTS/ASR use DashScope native endpoints (already handled in `tts.ts`; ASR added).
-- Other English Coach providers (DeepSeek/MiniMax/MiMo/Gemini) remain available for the
+- Other English Coach providers (DeepSeek/MiMo/Gemini) remain available for the
   analysis step; only Qwen and OpenAI offer the full TTS+ASR stack, so TTS/ASR fall back to a
   user-selected Qwen or OpenAI key when the active analysis provider lacks them.
 - Realtime APIs (`gpt-realtime-2`, Qwen omni-realtime) are noted for a future live-tutor mode;

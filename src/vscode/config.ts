@@ -28,7 +28,6 @@ export interface TtsTarget {
 
 export const PROVIDER_TITLES: Record<ProviderId, string> = {
   qwen: "Qwen (Token Plan)",
-  minimax: "MiniMax",
   deepseek: "DeepSeek",
   mimo: "Xiaomi MiMo",
   gemini: "Gemini",
@@ -124,7 +123,7 @@ export function getCoachModelSelection(id: ProviderId): string {
 export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TTSConfig> {
   const c = cfg();
   const raw = c.get<string>("tts.provider") ?? "qwen";
-  const provider = (["qwen", "gemini", "mimo", "minimax"].includes(raw) ? raw : "qwen") as TTSConfig["provider"];
+  const provider = (["qwen", "gemini", "mimo"].includes(raw) ? raw : "qwen") as TTSConfig["provider"];
   return {
     provider,
     geminiApiKey: (await getSpeechSecret(context, "gemini")) || (await getSecret(context, "gemini")) || "",
@@ -140,10 +139,6 @@ export async function getTTSConfig(context: vscode.ExtensionContext): Promise<TT
     mimoBaseURL: c.get<string>("mimo.baseURL") ?? MIMO_ANALYSIS_BASE_URL,
     mimoModel: c.get<string>("tts.mimoModel") ?? "mimo-v2.5-tts",
     mimoVoice: c.get<string>("tts.mimoVoice") ?? "Chloe",
-    minimaxApiKey: (await getSpeechSecret(context, "minimax")) || (await getSecret(context, "minimax")) || "",
-    minimaxBaseURL: c.get<string>("tts.minimaxBaseURL") ?? "https://api.minimaxi.com/v1",
-    minimaxModel: c.get<string>("tts.minimaxModel") ?? "speech-2.8-hd",
-    minimaxVoiceId: c.get<string>("tts.minimaxVoiceId") ?? "English_expressive_narrator",
   };
 }
 

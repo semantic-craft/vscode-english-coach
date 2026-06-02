@@ -359,19 +359,13 @@ function toneInstruction(tone: RewriteTone): string {
 }
 
 function resolveProviderConfig(): ProviderConfig {
-  const provider = (process.env.INTENT_EVAL_PROVIDER || "mimo") as ProviderId;
-  const defaults: Record<string, { title: string; baseURL: string; model: string; keyEnv: string[] }> = {
+  const requestedProvider = process.env.INTENT_EVAL_PROVIDER || "mimo";
+  const defaults: Record<"mimo" | "qwen", { title: string; baseURL: string; model: string; keyEnv: string[] }> = {
     mimo: {
       title: "Xiaomi MiMo",
       baseURL: process.env.XIAOMI_BASE_URL || "https://token-plan-cn.xiaomimimo.com/v1",
       model: process.env.INTENT_EVAL_MODEL || "mimo-v2.5",
       keyEnv: ["INTENT_EVAL_API_KEY", "XIAOMI_API_KEY"],
-    },
-    minimax: {
-      title: "MiniMax",
-      baseURL: process.env.MINIMAX_BASE_URL || "https://api.minimaxi.com/anthropic",
-      model: process.env.INTENT_EVAL_MODEL || "MiniMax-M3",
-      keyEnv: ["INTENT_EVAL_API_KEY", "MINIMAX_API_KEY", "MINIMAX_CN_API_KEY"],
     },
     qwen: {
       title: "Qwen (Token Plan)",
@@ -380,7 +374,8 @@ function resolveProviderConfig(): ProviderConfig {
       keyEnv: ["INTENT_EVAL_API_KEY", "QWEN_TOKEN_PLAN_API_KEY", "TOKEN_PLAN_API_KEY", "QWEN_API_KEY"],
     },
   };
-  const fallback = defaults[provider] || defaults.mimo;
+  const provider = requestedProvider === "qwen" ? "qwen" : "mimo";
+  const fallback = defaults[provider];
   const baseURL = process.env.INTENT_EVAL_BASE_URL || fallback.baseURL;
   const model = process.env.INTENT_EVAL_MODEL || fallback.model;
   const apiKey = fallback.keyEnv.map((key) => process.env[key]).find(Boolean) || "";

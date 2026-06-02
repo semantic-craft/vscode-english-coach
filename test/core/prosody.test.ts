@@ -117,7 +117,7 @@ describe("parseProsody", () => {
     expect(result.ipa).toBe("/rid ɪt əɡɛn/");
     expect(result.thoughtGroups[0].words[2].ipa).toBe("/əɡɛn/");
   });
-  it("repairs MiniMax loose word-analysis shape into the canonical stave shape", () => {
+  it("repairs loose word-analysis shape into the canonical stave shape", () => {
     const raw = JSON.stringify({
       text: "Could you turn it off and read the last line again?",
       transcription: "/kədʒu tɜːrn ɪt ɔːf ən riːd ðə læst laɪn əˈɡɛn/",
@@ -288,7 +288,14 @@ describe("analyzeProsody", () => {
   it("retries without the full schema when a provider returns the schema instead of an analysis", async () => {
     const schemaEcho = JSON.stringify(PROSODY_SCHEMA);
     const spy = vi.spyOn(providers, "generateWithProvider").mockResolvedValueOnce(schemaEcho).mockResolvedValueOnce(sample);
-    const cfg = { id: "minimax", title: "MiniMax", model: "MiniMax-M3", apiKey: "k", baseURL: "b", apiProtocol: "anthropic" } as any;
+    const cfg = {
+      id: "deepseek",
+      title: "DeepSeek",
+      model: "deepseek-v4-pro",
+      apiKey: "k",
+      baseURL: "b",
+      apiProtocol: "anthropic",
+    } as any;
     const result = await analyzeProsody("Go.", cfg, 1000, 2048);
     expect(result.text).toBe("Go.");
     expect(spy).toHaveBeenCalledTimes(2);
@@ -302,7 +309,6 @@ describe("analyzeProsody", () => {
     ["qwen", "Qwen", "qwen3.6-flash", "openai", true],
     ["gemini", "Gemini", "gemini-3.5-flash", "openai", true],
     ["mimo", "MiMo", "mimo-v2.5-pro", "openai", true],
-    ["minimax", "MiniMax", "MiniMax-M3", "anthropic", false],
   ])("runs %s analysis through the same everyday-English normalization", async (id, title, model, apiProtocol, sendsSchema) => {
     const raw = JSON.stringify({
       text: "Can you read it again?",

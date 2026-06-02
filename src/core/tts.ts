@@ -16,10 +16,6 @@ export interface TTSConfig {
   mimoBaseURL: string;
   mimoModel: string;
   mimoVoice: string;
-  minimaxApiKey: string;
-  minimaxBaseURL: string;
-  minimaxModel: string;
-  minimaxVoiceId: string;
 }
 
 export interface SynthesizeOptions {
@@ -43,10 +39,6 @@ const MIMO_TTS_DEFAULT_BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1";
 const MIMO_TTS_DEFAULT_MODEL = "mimo-v2.5-tts";
 const MIMO_TTS_DEFAULT_VOICE = "Chloe";
 
-const MINIMAX_TTS_DEFAULT_BASE_URL = "https://api.minimaxi.com/v1";
-const MINIMAX_TTS_DEFAULT_MODEL = "speech-2.8-hd";
-const MINIMAX_TTS_DEFAULT_VOICE = "English_expressive_narrator";
-
 const PCM_CHANNELS = 1;
 const PCM_BITS_PER_SAMPLE = 16;
 
@@ -64,11 +56,6 @@ interface QwenTTSResponse {
 interface MimoTTSResponse {
   choices?: Array<{ message?: { audio?: { data?: string } } }>;
   error?: { message?: string };
-}
-
-interface MinimaxTTSResponse {
-  data?: { audio?: string };
-  base_resp?: { status_code?: number; status_msg?: string };
 }
 
 /** Synthesize speech and return one playable audio buffer per chunk. Throws on failure. */
@@ -160,8 +147,6 @@ function synthesizeChunk(text: string, slow: boolean, config: TTSConfig, signal?
       return synthesizeWithQwen(text, slow, config, signal);
     case "mimo":
       return synthesizeWithMimo(text, config, signal);
-    case "minimax":
-      return synthesizeWithMinimax(text, config, signal);
     default:
       return synthesizeWithGemini(text, slow, config, signal);
   }
@@ -217,44 +202,6 @@ function isMimoPayAsYouGoBaseURL(baseURL: string): boolean {
   } catch {
     return false;
   }
-}
-
-async function synthesizeWithMinimax(text: string, config: TTSConfig, signal?: AbortSignal): Promise<Buffer> {
-  const apiKey = normalizeBearerApiKey(config.minimaxApiKey);
-  if (!apiKey) throw new Error("Add a MiniMax API key to use MiniMax read-aloud.");
-  const base = (config.minimaxBaseURL.trim() || MINIMAX_TTS_DEFAULT_BASE_URL).replace(/\/+$/, "");
-  const url = base.endsWith("/t2a_v2") ? base : `${base}/t2a_v2`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: config.minimaxModel.trim() || MINIMAX_TTS_DEFAULT_MODEL,
-      text,
-      stream: false,
-      voice_setting: {
-        voice_id: config.minimaxVoiceId.trim() || MINIMAX_TTS_DEFAULT_VOICE,
-        speed: 1,
-        vol: 1,
-        pitch: 0,
-      },
-      audio_setting: { sample_rate: 32000, bitrate: 128000, format: "mp3", channel: 1 },
-      output_format: "hex",
-    }),
-    signal,
-  });
-  const responseText = await response.text();
-  const data = parseJson<MinimaxTTSResponse>(responseText);
-  const code = data.base_resp?.status_code;
-  if (!response.ok || (code !== undefined && code !== 0)) {
-    throw new Error(data.base_resp?.status_msg ?? `MiniMax TTS HTTP ${response.status}`);
-  }
-  const hex = data.data?.audio;
-  if (!hex) throw new Error("MiniMax TTS returned no audio.");
-  return Buffer.from(hex, "hex");
-}
-
-function normalizeBearerApiKey(apiKey: string): string {
-  return apiKey.trim().replace(/^Bearer\s+/i, "").trim();
 }
 
 async function fetchUrlAsBase64(url: string | undefined, signal?: AbortSignal): Promise<string | undefined> {

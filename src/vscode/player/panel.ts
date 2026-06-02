@@ -462,8 +462,6 @@ export class SayItRightPanel {
         return { ...base, provider: target.provider, geminiModel: target.ttsModel, geminiVoice: target.voice };
       case "mimo":
         return { ...base, provider: target.provider, mimoModel: target.ttsModel, mimoVoice: target.voice };
-      case "minimax":
-        return { ...base, provider: target.provider, minimaxModel: target.ttsModel, minimaxVoiceId: target.voice };
       case "openai":
         throw new Error("OpenAI speech is handled separately.");
     }

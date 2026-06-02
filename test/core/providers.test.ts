@@ -11,7 +11,7 @@ describe("detectProtocol", () => {
   });
   it("anthropic-shaped paths -> anthropic", () => {
     expect(detectProtocol("deepseek", "https://api.deepseek.com/anthropic")).toBe("anthropic");
-    expect(detectProtocol("minimax", "https://api.minimaxi.com/anthropic")).toBe("anthropic");
+    expect(detectProtocol("qwen", "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic")).toBe("anthropic");
   });
   it("keeps MiMo text generation on the Anthropic-compatible protocol", () => {
     expect(detectProtocol("mimo", "https://token-plan-cn.xiaomimimo.com/v1")).toBe("anthropic");
@@ -315,11 +315,11 @@ describe("generateWithProvider (Anthropic protocol)", () => {
       return new Response(JSON.stringify({ content: [{ type: "text", text: "hello" }] }), { status: 200 });
     });
     const config: ProviderConfig = {
-      id: "minimax",
-      title: "MiniMax",
-      apiKey: "mini-test",
-      baseURL: "https://api.minimaxi.com/anthropic",
-      model: "MiniMax-M3",
+      id: "deepseek",
+      title: "DeepSeek",
+      apiKey: "deepseek-test",
+      baseURL: "https://api.deepseek.com/anthropic",
+      model: "deepseek-v4-pro",
       apiProtocol: "anthropic",
     };
     await generateWithProvider(config, { system: "s", user: "u" }, 5000, 256);

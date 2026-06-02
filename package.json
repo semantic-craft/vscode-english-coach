@@ -2,7 +2,7 @@
   "name": "vscode-say-it-right",
   "displayName": "Say It Right",
   "description": "Practice English pronunciation in VS Code with stress, intonation, rhythm, linking, IPA, shadowing loops, and model speech.",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "keywords": [
     "english",
     "pronunciation",
@@ -180,7 +180,6 @@
           "type": "string",
           "enum": [
             "qwen",
-            "minimax",
             "deepseek",
             "mimo",
             "gemini",
@@ -191,7 +190,7 @@
         },
         "englishCoach.providerOrder": {
           "type": "string",
-          "default": "qwen,minimax,mimo,gemini,openai",
+          "default": "qwen,mimo,gemini,openai",
           "description": "Comma-separated provider order shown in the switcher."
         },
         "englishCoach.modelTier": {
@@ -283,22 +282,6 @@
           ],
           "default": "gemini-3.5-flash"
         },
-        "englishCoach.minimax.enabled": {
-          "type": "boolean",
-          "default": true
-        },
-        "englishCoach.minimax.baseURL": {
-          "type": "string",
-          "default": "https://api.minimaxi.com/anthropic"
-        },
-        "englishCoach.minimax.model": {
-          "type": "string",
-          "enum": [
-            "MiniMax-M3",
-            "MiniMax-M2.7-highspeed"
-          ],
-          "default": "MiniMax-M3"
-        },
         "englishCoach.openai.enabled": {
           "type": "boolean",
           "default": true
@@ -319,8 +302,7 @@
           "enum": [
             "qwen",
             "gemini",
-            "mimo",
-            "minimax"
+            "mimo"
           ],
           "default": "qwen"
         },
@@ -388,30 +370,10 @@
           ],
           "default": "Chloe"
         },
-        "englishCoach.tts.minimaxBaseURL": {
-          "type": "string",
-          "default": "https://api.minimaxi.com/v1"
-        },
-        "englishCoach.tts.minimaxModel": {
-          "type": "string",
-          "default": "speech-2.8-hd"
-        },
-        "englishCoach.tts.minimaxVoiceId": {
-          "type": "string",
-          "enum": [
-            "English_expressive_narrator",
-            "English_CaptivatingStoryteller",
-            "English_Trustworth_Man",
-            "English_SereneWoman",
-            "English_WiseScholar"
-          ],
-          "default": "English_expressive_narrator"
-        },
         "sayItRight.analysisProvider": {
           "type": "string",
           "enum": [
             "qwen",
-            "minimax",
             "mimo",
             "gemini",
             "openai"
@@ -423,7 +385,6 @@
           "type": "string",
           "enum": [
             "qwen",
-            "minimax",
             "mimo",
             "gemini",
             "openai"
@@ -440,15 +401,6 @@
           ],
           "default": "qwen3.6-flash",
           "description": "Qwen model used for pronunciation analysis."
-        },
-        "sayItRight.analysisModel.minimax": {
-          "type": "string",
-          "enum": [
-            "MiniMax-M3",
-            "MiniMax-M2.7-highspeed"
-          ],
-          "default": "MiniMax-M3",
-          "description": "MiniMax model used for pronunciation analysis."
         },
         "sayItRight.analysisModel.mimo": {
           "type": "string",
@@ -492,15 +444,6 @@
           "default": "qwen3-tts-instruct-flash",
           "description": "Qwen instructable TTS model used for teacher-mode read-aloud."
         },
-        "sayItRight.ttsModel.minimax": {
-          "type": "string",
-          "enum": [
-            "speech-2.8-hd",
-            "speech-2.8-turbo"
-          ],
-          "default": "speech-2.8-hd",
-          "description": "MiniMax TTS model used for read-aloud in the player."
-        },
         "sayItRight.ttsModel.mimo": {
           "type": "string",
           "enum": [
@@ -537,18 +480,6 @@
           ],
           "default": "Jennifer",
           "description": "Voice name used with the Qwen TTS provider."
-        },
-        "sayItRight.voice.minimax": {
-          "type": "string",
-          "enum": [
-            "English_expressive_narrator",
-            "English_CaptivatingStoryteller",
-            "English_Trustworth_Man",
-            "English_SereneWoman",
-            "English_WiseScholar"
-          ],
-          "default": "English_expressive_narrator",
-          "description": "Voice id used with the MiniMax TTS provider."
         },
         "sayItRight.voice.mimo": {
           "type": "string",

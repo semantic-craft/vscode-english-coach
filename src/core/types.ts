@@ -1,4 +1,4 @@
-export const PROVIDER_IDS = ["qwen", "minimax", "deepseek", "mimo", "gemini", "openai"] as const;
+export const PROVIDER_IDS = ["qwen", "deepseek", "mimo", "gemini", "openai"] as const;
 
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
@@ -14,7 +14,7 @@ export type RewriteTone = "natural" | "casual" | "formal" | "concise";
 
 export type ProviderAPIProtocol = "openai" | "anthropic";
 
-export type TTSProvider = "qwen" | "gemini" | "mimo" | "minimax";
+export type TTSProvider = "qwen" | "gemini" | "mimo";
 
 export interface RuntimeSettings {
   modelTier: ModelTier;
