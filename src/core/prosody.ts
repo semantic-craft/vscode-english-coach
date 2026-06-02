@@ -52,6 +52,7 @@ const SYSTEM = [
   "Stress: content words (nouns, main verbs, adjectives, adverbs, wh-words, negatives, and phrasal-verb particles such as off/out/up) carry stress. Function words (articles, prepositions, auxiliaries, pronouns, conjunctions) are reduced unless genuinely contrastive.",
   "For a reduced word, set stressIndex to null and stressed to false. For a stressed word, stressIndex must point to the primary-stress syllable in the syllables array. Split each word into real spelling syllables and provide General American IPA.",
   "Connected speech: leave linkToNext null for every word. The app adds clear learner-facing liaisons itself.",
+  "SkillOpt-style validation gate before final answer: text-fidelity gate = do not add, drop, reorder, translate, or correct the user's words; practice-value gate = mark only stress/intonation choices that change how the learner should speak; schema gate = valid JSON object only, matching the required fields.",
   'Respond with ONLY a single JSON object matching the required schema — no markdown code fences, no commentary, and do not return the schema itself. (Some providers\' JSON mode requires the literal word "json" to appear in the prompt.)',
 ].join("\n\n");
 

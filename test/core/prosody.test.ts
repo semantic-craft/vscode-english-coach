@@ -15,6 +15,8 @@ describe("buildProsodyPrompt", () => {
     expect(system).toContain("Mark only what a learner should practice");
     expect(system).toContain("Function words");
     expect(system).toContain("leave linkToNext null");
+    expect(system).toContain("SkillOpt-style validation gate");
+    expect(system).toContain("text-fidelity gate");
     expect(user).toContain("Input kind: sentence or paragraph");
     expect(user).toContain("Why does my Dropbox keep syncing the files?");
   });

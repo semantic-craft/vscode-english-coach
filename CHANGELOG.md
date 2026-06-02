@@ -1,5 +1,10 @@
 # Say It Right Changelog
 
+## [0.4.13] - 2026-06-02
+
+- Added SkillOpt-style validation gates to translation, native-expression, rewrite-coach, pronunciation-feedback, and prosody prompts so model output is checked for fidelity, anti-invention, speakability, schema correctness, and learner usefulness before responding.
+- Added prompt-contract coverage for the new gates so future prompt edits keep the expression/pronunciation split intact.
+
 ## [0.4.11] - 2026-06-01
 
 - Switched the built-in MiniMax speech default to `speech-2.8-hd` while keeping MiniMax text analysis on `MiniMax-M3` by default.

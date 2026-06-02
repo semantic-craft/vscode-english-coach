@@ -22,6 +22,8 @@ describe("buildTranslationPrompt", () => {
     expect(system).toContain("internally infer the speaker's intent");
     expect(system).toContain("native speaker would naturally express");
     expect(system).toContain("not as isolated dictionary entries");
+    expect(system).toContain("SkillOpt-style validation gate");
+    expect(system).toContain("faithfulness gate");
     expect(system).toContain("Return only the translation");
     expect(user).toContain("我今天有点撑不住了");
     expect(user).toContain("Preserve names, URLs, inline code");
@@ -36,6 +38,8 @@ describe("buildRewriteCoachPrompt", () => {
     expect(system).toContain("why");
     expect(system).toContain("communicative job");
     expect(system).toContain("make only minimal edits");
+    expect(system).toContain("native-English gate");
+    expect(system).toContain("schema gate");
   });
 });
 
@@ -50,6 +54,8 @@ describe("buildNativeEnglishExpressionPrompt", () => {
     expect(system).toContain("Do not add unsupported greetings");
     expect(system).toContain("final English wording");
     expect(system).toContain("rewritten");
+    expect(system).toContain("fidelity gate");
+    expect(system).toContain("anti-invention gate");
   });
 });
 
@@ -89,6 +95,8 @@ describe("buildPronunciationFeedbackPrompt", () => {
       extra: [],
     });
     expect(system).toContain("one concise Simplified Chinese coaching tip");
+    expect(system).toContain("SkillOpt-style validation gate");
+    expect(system).toContain("evidence gate");
     expect(system).toContain('{"tip":"..."}');
     expect(user).toContain("Missed: really");
     expect(user).toContain("Matched: 3/4");

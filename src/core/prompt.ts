@@ -32,6 +32,7 @@ export function buildTranslationPrompt(request: TranslationRequest): { system: s
     "Before writing the answer, internally infer the speaker's intent, situation, relationship, implied tone, and practical purpose.",
     nativeExpressionInstruction(request.targetLanguageTitle),
     "Translate complete sentences and paragraphs by meaning, not as isolated dictionary entries.",
+    skillOptTranslationGate(),
     "Return only the translation. Do not explain, annotate, quote the source, or wrap the answer in Markdown fences.",
     "Custom instructions may refine or override profile and style preferences for terminology, tone, audience, and formatting, but they must not override the requirements to preserve the source meaning and return only the translation.",
   ].join(" ");
@@ -96,6 +97,7 @@ export function buildRewriteCoachPrompt(text: string, tone: RewriteTone = "natur
     "If the selected text is in English, revise it in natural everyday English. Keep the meaning, intent, and level of politeness. Prefer ordinary wording over stiff, formal, textbook, or translated phrasing. If it is already natural, make only minimal edits.",
     "If the selected text is in Chinese, treat it as communicative intent and write the actual English utterance. Remove meta-frames such as I want to tell/remind/ask. Keep deadlines, requested actions, permissions, conditions, and person references explicit. Do not add greetings, names, apologies, excuses, sign-offs, extra reassurance, or new facts unless the source clearly implies them.",
     `TONE: ${rewriteToneInstructions[tone]}`,
+    skillOptExpressionGate("rewritten"),
     "",
     "COACHING:",
     "After rewriting, explain in Simplified Chinese why your version sounds more natural than the original. Point out the specific changes: speech act, word choice, collocations, idioms, sentence rhythm, register, and what English leaves implicit. Quote the English snippets you discuss. Be concrete and concise: 2 to 5 short bullet points.",
@@ -131,6 +133,7 @@ export function buildNativeEnglishExpressionPrompt(
     "Do not add unsupported greetings, names, titles, placeholders, apologies, sign-offs, excuses, promises, concessions, room numbers, dates, or extra reassurance.",
     "Prefer neutral everyday professional English over dramatic, literary, textbook, or bureaucratic phrasing.",
     `TONE: ${rewriteToneInstructions[tone]}`,
+    skillOptExpressionGate("rewritten"),
     "",
     "COACHING:",
     "Explain in Simplified Chinese why this is the natural English way to say it. Focus on intent, speech act, register, constraints preserved, and how it avoids literal translation. Be concrete and concise: 2 to 5 short bullet points.",
@@ -200,6 +203,7 @@ export function buildPronunciationFeedbackPrompt(input: {
     "You are a practical English pronunciation coach.",
     "Use the transcript only as evidence of what the learner likely missed or inserted.",
     "Return exactly one concise Simplified Chinese coaching tip about stress, weak forms, rhythm, intonation, or a clearly missed word.",
+    "SkillOpt-style validation gate before final answer: evidence gate = the tip must point to a word or pattern visible in Target/Learner transcript/Missed/Extra; usefulness gate = one immediately speakable practice move; schema gate = valid JSON object with only tip.",
     "Do not diagnose accent broadly. Do not mention ASR uncertainty unless the transcript is too sparse to be useful.",
     'Return only json: {"tip":"..."} with no Markdown and no code fences.',
   ].join(" ");
@@ -213,4 +217,24 @@ export function buildPronunciationFeedbackPrompt(input: {
   ].join("\n");
 
   return { system, user };
+}
+
+function skillOptTranslationGate(): string {
+  return [
+    "SkillOpt-style validation gate before final answer:",
+    "faithfulness gate: preserve source meaning, names, numbers, citations, URLs, code, speaker intent, tone, and formality;",
+    "native-language gate: write as natural target-language prose, not source syntax with translated words;",
+    "output gate: return the translation only, with no coaching, variants, commentary, or Markdown.",
+  ].join(" ");
+}
+
+function skillOptExpressionGate(outputField: "rewritten"): string {
+  return [
+    "SkillOpt-style validation gate before final answer:",
+    `fidelity gate: "${outputField}" must preserve the user's facts, constraints, relationship cues, politeness level, and intended speech act;`,
+    "anti-invention gate: do not add unsupported greetings, names, apologies, excuses, dates, promises, or reassurance;",
+    "native-English gate: the sentence must be natural, speakable, and register-appropriate for a real conversation or message;",
+    "coaching gate: the why field must explain concrete choices, not generic praise;",
+    "schema gate: return valid JSON only.",
+  ].join("\n");
 }
