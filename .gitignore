@@ -1,0 +1,11 @@
+node_modules
+out
+*.vsix
+.DS_Store
+.build
+.firecrawl/
+
+# Internal agent/dev working notes — never publish.
+handoff-*.md
+docs/superpowers/
+docs/evals/
