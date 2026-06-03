@@ -2,7 +2,7 @@
   "name": "vscode-say-it-right",
   "displayName": "Say It Right",
   "description": "Practice English pronunciation in VS Code with stress, intonation, rhythm, linking, IPA, shadowing loops, and model speech.",
-  "version": "0.4.18",
+  "version": "0.4.19",
   "keywords": [
     "english",
     "pronunciation",
@@ -227,7 +227,7 @@
         },
         "englishCoach.qwen.baseURL": {
           "type": "string",
-          "default": "https://YOUR_MAAS_ENDPOINT/apps/anthropic",
+          "default": "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
           "description": "Qwen text-generation base URL used by Coach, Translate, and pronunciation analysis. Defaults to Bailian Token Plan's Anthropic-compatible endpoint for lower latency; Qwen TTS keeps its separate DashScope /api/v1 setting."
         },
         "englishCoach.qwen.model": {

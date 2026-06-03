@@ -369,7 +369,7 @@ function resolveProviderConfig(): ProviderConfig {
     },
     qwen: {
       title: "Qwen (Token Plan)",
-      baseURL: process.env.QWEN_BASE_URL || "https://YOUR_MAAS_ENDPOINT/apps/anthropic",
+      baseURL: process.env.QWEN_BASE_URL || "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
       model: process.env.INTENT_EVAL_MODEL || "qwen3.6-flash",
       keyEnv: ["INTENT_EVAL_API_KEY", "QWEN_TOKEN_PLAN_API_KEY", "TOKEN_PLAN_API_KEY", "QWEN_API_KEY"],
     },

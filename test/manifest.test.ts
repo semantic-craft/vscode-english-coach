@@ -15,7 +15,7 @@ describe("extension manifest provider defaults", () => {
     expect(properties["englishCoach.reasoningMode"].default).toBe("off");
     expect(properties["englishCoach.reasoningMode"].enum).toEqual(["off", "on", "auto"]);
     expect(properties["englishCoach.qwen.baseURL"].default).toBe(
-      "https://YOUR_MAAS_ENDPOINT/apps/anthropic",
+      "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
     );
     expect(properties["englishCoach.qwen.model"].enum).toEqual(["qwen3.6-flash", "qwen3.7-plus", "qwen3.7-max"]);
     expect(properties["englishCoach.qwen.model"].default).toBe("qwen3.6-flash");

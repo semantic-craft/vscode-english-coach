@@ -11,7 +11,7 @@ describe("detectProtocol", () => {
   });
   it("anthropic-shaped paths -> anthropic", () => {
     expect(detectProtocol("deepseek", "https://api.deepseek.com/anthropic")).toBe("anthropic");
-    expect(detectProtocol("qwen", "https://YOUR_MAAS_ENDPOINT/apps/anthropic")).toBe("anthropic");
+    expect(detectProtocol("qwen", "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic")).toBe("anthropic");
   });
   it("keeps MiMo text generation on the Anthropic-compatible protocol", () => {
     expect(detectProtocol("mimo", "https://token-plan-cn.xiaomimimo.com/v1")).toBe("anthropic");
@@ -20,8 +20,8 @@ describe("detectProtocol", () => {
   });
   it("routes Qwen Token Plan by base URL protocol", () => {
     expect(detectProtocol("qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1")).toBe("openai");
-    expect(detectProtocol("qwen", "https://YOUR_MAAS_ENDPOINT/compatible-mode/v1")).toBe("openai");
-    expect(detectProtocol("qwen", "https://YOUR_MAAS_ENDPOINT/apps/anthropic")).toBe("anthropic");
+    expect(detectProtocol("qwen", "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1")).toBe("openai");
+    expect(detectProtocol("qwen", "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic")).toBe("anthropic");
   });
   it("falls back to anthropic", () => {
     expect(detectProtocol("mimo", "https://example.com/foo")).toBe("anthropic");
@@ -177,7 +177,7 @@ describe("generateWithProvider (OpenAI protocol)", () => {
       id: "qwen",
       title: "Qwen",
       apiKey: "qwen-test",
-      baseURL: "https://YOUR_MAAS_ENDPOINT/apps/anthropic",
+      baseURL: "https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic",
       model: "qwen3.6-flash",
       apiProtocol: "anthropic",
       reasoningMode: "off",
@@ -186,7 +186,7 @@ describe("generateWithProvider (OpenAI protocol)", () => {
     const [url, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(String(init?.body));
     expect(out).toBe("hello");
-    expect(url).toBe("https://YOUR_MAAS_ENDPOINT/apps/anthropic/v1/messages");
+    expect(url).toBe("https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic/v1/messages");
     expect(body.thinking).toEqual({ type: "disabled" });
     expect((init?.headers as Record<string, string>)["anthropic-version"]).toBe("2023-06-01");
   });
